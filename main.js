@@ -1,7 +1,9 @@
 console.log("✅ SummerCup App iniciada");
 
-const supabaseUrl = import.meta.env.VITE_SUPABASE_URL
-const supabaseKey = import.meta.env.VITE_SUPABASE_KEY
+const supabaseUrl = 'https://nthbfuqptsahmhtlqymd.supabase.co'
+const supabaseKey = 'sb_publishable_wxDX9GFgki2I701eWa5hNQ_kHbV4f5X' 
+//const supabaseUrl = import.meta.env.VITE_SUPABASE_URL
+//const supabaseKey = import.meta.env.VITE_SUPABASE_KEY
 
 console.log("Supabase URL:", supabaseUrl ? "✅" : "❌")
 console.log("Supabase Key:", supabaseKey ? "✅" : "❌")
