@@ -4,7 +4,11 @@ console.log("✅ SummerCup App iniciada");
 const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
 const supabaseKey = import.meta.env.VITE_SUPABASE_KEY;
 
-function testConnection() {
+console.log("Supabase URL:", supabaseUrl ? "✅" : "❌");
+console.log("Supabase Key:", supabaseKey ? "✅" : "❌");
+
+// Função global (expõe no window para HTML onclick)
+window.testConnection = function() {
   if (supabaseUrl && supabaseKey) {
     alert("✅ Supabase configurado com sucesso!");
     console.log("URL:", supabaseUrl);
@@ -12,6 +16,3 @@ function testConnection() {
     alert("❌ Variáveis Supabase não encontradas. Configura no Vercel.");
   }
 }
-
-console.log("Supabase URL:", supabaseUrl ? "✅" : "❌");
-console.log("Supabase Key:", supabaseKey ? "✅" : "❌");
