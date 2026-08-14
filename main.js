@@ -1,70 +1,32 @@
-import { createClient } from '@supabase/supabase-js'
+import { supabase, getEvents } from './api.js'
+
+console.log("✅ SummerCup App iniciada");
 
 const supabaseUrl = import.meta.env.VITE_SUPABASE_URL
 const supabaseKey = import.meta.env.VITE_SUPABASE_KEY
 
-export const supabase = createClient(supabaseUrl, supabaseKey)
+console.log("Supabase URL:", supabaseUrl ? "✅" : "❌")
+console.log("Supabase Key:", supabaseKey ? "✅" : "❌")
 
-// ============= EVENTS API =============
-
-export async function getEvents(teamId) {
-  try {
-    const { data, error } = await supabase
-      .from('events')
-      .select('*')
-      .eq('team_id', teamId)
-      .order('data', { ascending: true })
-    
-    if (error) throw error
-    return { success: true, data }
-  } catch (error) {
-    console.error('Error fetching events:', error.message)
-    return { success: false, error: error.message }
+// Função global para testar Supabase
+window.testConnection = function() {
+  if (supabaseUrl && supabaseKey) {
+    alert("✅ Supabase configurado com sucesso!")
+  } else {
+    alert("❌ Variáveis Supabase não encontradas.")
   }
 }
 
-export async function createEvent(eventData) {
-  try {
-    const { data, error } = await supabase
-      .from('events')
-      .insert([eventData])
-      .select()
-    
-    if (error) throw error
-    return { success: true, data: data[0] }
-  } catch (error) {
-    console.error('Error creating event:', error.message)
-    return { success: false, error: error.message }
-  }
-}
-
-export async function updateEvent(eventId, updates) {
-  try {
-    const { data, error } = await supabase
-      .from('events')
-      .update(updates)
-      .eq('id', eventId)
-      .select()
-    
-    if (error) throw error
-    return { success: true, data: data[0] }
-  } catch (error) {
-    console.error('Error updating event:', error.message)
-    return { success: false, error: error.message }
-  }
-}
-
-export async function deleteEvent(eventId) {
-  try {
-    const { error } = await supabase
-      .from('events')
-      .delete()
-      .eq('id', eventId)
-    
-    if (error) throw error
-    return { success: true }
-  } catch (error) {
-    console.error('Error deleting event:', error.message)
-    return { success: false, error: error.message }
+// Função global para testar Events API
+window.testEventsAPI = async function() {
+  const teamUUID = '2287a93d-ccd0-4af6-85ea-89bd0e20f658' // Substitui com UUID real
+  const result = await getEvents(teamUUID)
+  
+  if (result.success) {
+    console.log("✅ Events carregados:", result.data)
+    alert(`✅ API funcionando! ${result.data.length} eventos encontrados.`)
+  } else {
+    console.error("❌ Erro:", result.error)
+    alert(`❌ Erro na API: ${result.error}`)
   }
 }
