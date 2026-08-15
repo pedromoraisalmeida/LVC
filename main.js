@@ -1,8 +1,10 @@
 console.log("✅ SummerCup App iniciada");
 
 // Variáveis de ambiente (hardcoded por agora)
-const supabaseUrl = 'https://nthbfuqptsahmhtlqymd.supabase.co'
-const supabaseKey = 'sb_publishable_wxDX9GFgki2I701eWa5hNQ_kHbV4f5X' // Cole a chave completa aqui
+//const supabaseUrl = 'https://nthbfuqptsahmhtlqymd.supabase.co'
+//const supabaseKey = 'sb_publishable_wxDX9GFgki2I701eWa5hNQ_kHbV4f5X' // Cole a chave completa aqui
+const supabaseUrl = window.ENV?.SUPABASE_URL || ''
+const supabaseKey = window.ENV?.SUPABASE_KEY || ''
 
 console.log("Supabase URL:", supabaseUrl ? "✅" : "❌")
 console.log("Supabase Key:", supabaseKey ? "✅" : "❌")
