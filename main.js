@@ -22,7 +22,7 @@ window.testConnection = function() {
 
 // Função global para testar Events API
 window.testEventsAPI = async function() {
-  const teamUUID = 'SEU_UUID_AQUI' // Substitui com UUID real
+  const teamUUID = '2287a93d-ccd0-4af6-85ea-89bd0e20f658' // Substitui com UUID real
   
   try {
     const { data, error } = await supabaseClient
