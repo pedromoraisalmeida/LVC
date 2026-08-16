@@ -186,7 +186,7 @@ window.testGetMyTeams = async function() {
   }
 }
 
-// Testar getTeamInfo (simplificado)
+// Testar getTeamInfo (simplificado - sem .single())
 window.testGetTeamInfo = async function() {
   const teamId = prompt("Introduz o UUID da equipa (ou leave empty para usar UUID exemplo):")
   const id = teamId || '2287a93d-ccd0-4af6-85ea-89bd0e20f658'
@@ -197,9 +197,11 @@ window.testGetTeamInfo = async function() {
       .from('teams')
       .select('id, name, escalao, descricao, ativo, criado_em')
       .eq('id', id)
-      .single()
 
     if (teamError) throw teamError
+    if (!teamData || teamData.length === 0) throw new Error('Equipa não encontrada')
+
+    const team = teamData[0]
 
     // Query 2: Get team members
     const { data: membersData, error: membersError } = await supabaseClient
@@ -219,9 +221,9 @@ window.testGetTeamInfo = async function() {
 
     if (membersError) throw membersError
 
-    console.log("✅ Info da equipa:", teamData)
+    console.log("✅ Info da equipa:", team)
     console.log("✅ Membros:", membersData)
-    alert(`✅ Equipa "${teamData.name}" (${teamData.escalao}) - ${membersData.length} membros`)
+    alert(`✅ Equipa "${team.name}" (${team.escalao}) - ${membersData.length} membros`)
   } catch (error) {
     console.error("❌ Erro:", error.message)
     alert(`❌ Erro: ${error.message}`)
