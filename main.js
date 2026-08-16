@@ -169,6 +169,21 @@ function goToDashboard() {
   showDashboard()
 }
 
+// Voltar ao Calendário
+function goToCalendar() {
+  showCalendar(selectedTeam)
+}
+
+// Mostrar detalhes do evento
+async function showEventDetails(eventId) {
+  document.getElementById('loginScreen').style.display = 'none'
+  document.getElementById('dashboardScreen').style.display = 'none'
+  document.getElementById('calendarScreen').style.display = 'none'
+  document.getElementById('eventDetailsScreen').style.display = 'flex'
+
+  await loadEventDetails(eventId)
+}
+
 // Carregar equipas do utilizador
 async function loadUserTeams() {
   try {
@@ -255,7 +270,7 @@ async function loadTeamEvents(teamId) {
       })
 
       return `
-        <div class="event-card">
+        <div class="event-card" onclick="showEventDetails('${event.id}')" style="cursor: pointer;">
           <div class="event-header">
             <span class="event-type ${event.tipo}">${event.tipo === 'treino' ? '🏋️ Treino' : '🎯 Jogo'}</span>
             <span class="event-date">${dataFormatada}</span>
@@ -274,6 +289,100 @@ async function loadTeamEvents(teamId) {
   } catch (error) {
     console.error('❌ Erro ao carregar eventos:', error.message)
     document.getElementById('eventsContainer').innerHTML = `<p class="loading">❌ Erro: ${error.message}</p>`
+  }
+}
+
+// Carregar detalhes do evento
+async function loadEventDetails(eventId) {
+  try {
+    const container = document.getElementById('eventDetailsContainer')
+    container.innerHTML = '<p class="loading">Carregando...</p>'
+
+    const { data, error } = await supabaseClient
+      .from('events')
+      .select('*')
+      .eq('id', eventId)
+      .single()
+
+    if (error) throw error
+
+    const event = data
+    const dataObj = new Date(event.data)
+    const dataFormatada = dataObj.toLocaleDateString('pt-PT', {
+      weekday: 'long',
+      year: 'numeric',
+      month: 'long',
+      day: 'numeric'
+    })
+
+    const typeDisplay = event.tipo === 'treino' ? '🏋️ Treino' : '🎯 Jogo'
+
+    let html = `
+      <span class="event-type ${event.tipo}">${typeDisplay}</span>
+      <h2>${event.tipo === 'treino' ? 'Treino' : 'Jogo'}</h2>
+
+      <div class="detail-section">
+        <div class="detail-row">
+          <label>Data</label>
+          <value>${dataFormatada}</value>
+        </div>
+        <div class="detail-row">
+          <label>Hora</label>
+          <value>${event.hora || 'N/A'}</value>
+        </div>
+        <div class="detail-row">
+          <label>Local</label>
+          <value>${event.local || 'N/A'}</value>
+        </div>
+      </div>
+    `
+
+    if (event.oponente) {
+      html += `
+        <div class="detail-section">
+          <div class="detail-row">
+            <label>Adversário</label>
+            <value>${event.oponente}</value>
+          </div>
+        </div>
+      `
+    }
+
+    if (event.descricao) {
+      html += `
+        <div class="detail-section">
+          <label>Descrição</label>
+          <p style="margin-top: 10px; color: var(--text-light);">${event.descricao}</p>
+        </div>
+      `
+    }
+
+    if (event.sets_nós !== null && event.sets_oponente !== null) {
+      const confirmed = event.resultado_confirmado ? '<span class="result-confirmed">✅ Confirmado</span>' : ''
+      html += `
+        <div class="detail-section">
+          <h3>Resultado ${confirmed}</h3>
+          <div class="result-section">
+            <div class="sets-display">
+              <div class="team-set">
+                <div class="set-label">Nós</div>
+                <div class="set-value">${event.sets_nós}</div>
+              </div>
+              <div class="set-divider">×</div>
+              <div class="team-set">
+                <div class="set-label">${event.oponente || 'Adversário'}</div>
+                <div class="set-value">${event.sets_oponente}</div>
+              </div>
+            </div>
+          </div>
+        </div>
+      `
+    }
+
+    container.innerHTML = html
+  } catch (error) {
+    console.error('❌ Erro ao carregar detalhes:', error.message)
+    document.getElementById('eventDetailsContainer').innerHTML = `<p class="loading">❌ Erro: ${error.message}</p>`
   }
 }
 
