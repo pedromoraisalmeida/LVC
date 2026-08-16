@@ -151,7 +151,7 @@ window.testConnection = function() {
 
 // ============= GRUPO 1: TEAMS API (TESTES) =============
 
-// Testar getMyTeams
+// Testar getMyTeams (2 queries separadas)
 window.testGetMyTeams = async function() {
   try {
     const { data: { user }, error: authError } = await supabaseClient.auth.getUser()
@@ -161,25 +161,38 @@ window.testGetMyTeams = async function() {
       return
     }
 
-    const { data, error } = await supabaseClient
+    // Query 1: Get user_teams associations
+    const { data: userTeamsData, error: userTeamsError } = await supabaseClient
       .from('user_teams')
-      .select(`
-        team_id,
-        role,
-        teams:team_id (
-          id,
-          name,
-          escalao,
-          descricao,
-          ativo
-        )
-      `)
+      .select('team_id, role')
       .eq('user_id', user.id)
 
-    if (error) throw error
+    if (userTeamsError) throw userTeamsError
 
-    console.log("✅ Minhas equipas:", data)
-    alert(`✅ Encontradas ${data.length} equipa(s)!`)
+    // Query 2: Get team details for each team_id
+    if (userTeamsData.length === 0) {
+      console.log("✅ Minhas equipas:", [])
+      alert("✅ Nenhuma equipa associada")
+      return
+    }
+
+    const teamIds = userTeamsData.map(ut => ut.team_id)
+    const { data: teamsData, error: teamsError } = await supabaseClient
+      .from('teams')
+      .select('id, name, escalao, descricao, ativo')
+      .in('id', teamIds)
+
+    if (teamsError) throw teamsError
+
+    // Combinar dados
+    const myTeams = userTeamsData.map(ut => ({
+      team_id: ut.team_id,
+      role: ut.role,
+      team: teamsData.find(t => t.id === ut.team_id)
+    }))
+
+    console.log("✅ Minhas equipas:", myTeams)
+    alert(`✅ Encontradas ${myTeams.length} equipa(s)!`)
   } catch (error) {
     console.error("❌ Erro:", error.message)
     alert(`❌ Erro: ${error.message}`)
