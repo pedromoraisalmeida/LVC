@@ -3,28 +3,69 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>SummerCup - App de Gestão</title>
+  <title>Lousã Volei - App de Gestão</title>
   <link rel="stylesheet" href="style.css">
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 </head>
 <body>
-  <div id="app">
+  <!-- TELA DE LOGIN -->
+  <div id="loginScreen" class="screen">
     <div class="container">
-      <h1>🏐 SummerCup App</h1>
+      <div class="login-card">
+        <h1>🏐 Lousã Volei</h1>
+        <p class="subtitle">App de Gestão de Equipas</p>
+
+        <form id="authForm" onsubmit="handleAuth(event)">
+          <div class="form-group">
+            <label for="email">Email</label>
+            <input type="email" id="email" required placeholder="seu@email.com">
+          </div>
+
+          <div class="form-group">
+            <label for="password">Password</label>
+            <input type="password" id="password" required placeholder="••••••••">
+          </div>
+
+          <button type="submit" id="authBtn" class="btn-primary">Entrar</button>
+        </form>
+
+        <div class="auth-toggle">
+          <p id="toggleText">Não tens conta? <a href="#" onclick="toggleAuthMode(event)">Criar nova</a></p>
+        </div>
+
+        <div id="authError" class="error" style="display: none;"></div>
+        <div id="authSuccess" class="success" style="display: none;"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- TELA PRINCIPAL (Dashboard) -->
+  <div id="mainScreen" class="screen" style="display: none;">
+    <div class="container">
+      <div class="header">
+        <h1>🏐 Lousã Volei</h1>
+        <div class="user-info">
+          <span id="userEmail"></span>
+          <button onclick="handleLogout()" class="btn-logout">Sair</button>
+        </div>
+      </div>
+
       <div class="card">
-        <p>Bem-vindo! A app está a carregar...</p>
-        <h2>Configuração</h2>
+        <h2>Testes de API</h2>
+
+        <h3>Configuração</h3>
         <button onclick="testConnection()">Testar Conexão Supabase</button>
 
-        <h2 style="margin-top: 20px;">Grupo 1: Equipas</h2>
+        <h3 style="margin-top: 20px;">Grupo 1: Equipas</h3>
         <button onclick="testGetMyTeams()">Testar getMyTeams()</button>
-        <button onclick="testGetTeamInfo()" style="margin-left: 10px;">Testar getTeamInfo()</button>
+        <button onclick="testGetTeamInfo()">Testar getTeamInfo()</button>
 
-        <h2 style="margin-top: 20px;">Eventos</h2>
+        <h3 style="margin-top: 20px;">Eventos</h3>
         <button onclick="testEventsAPI()">Testar getEvents()</button>
       </div>
     </div>
   </div>
+
   <script src="env.js"></script>
   <script src="main.js"></script>
 </body>

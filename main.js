@@ -1,8 +1,6 @@
-console.log("✅ SummerCup App iniciada");
+console.log("✅ Lousã Volei App iniciada");
 
-// Variáveis de ambiente (hardcoded por agora)
-//const supabaseUrl = 'https://nthbfuqptsahmhtlqymd.supabase.co'
-//const supabaseKey = 'sb_publishable_wxDX9GFgki2I701eWa5hNQ_kHbV4f5X' // Cole a chave completa aqui
+// Variáveis de ambiente
 const supabaseUrl = window.ENV?.SUPABASE_URL || ''
 const supabaseKey = window.ENV?.SUPABASE_KEY || ''
 
@@ -12,6 +10,135 @@ console.log("Supabase Key:", supabaseKey ? "✅" : "❌")
 // Inicializar Supabase (via CDN)
 const { createClient } = window.supabase
 const supabaseClient = createClient(supabaseUrl, supabaseKey)
+
+// Estado da app
+let isSignUp = false
+let currentUser = null
+
+// ============= AUTENTICAÇÃO =============
+
+// Inicializar app - verificar se já há utilizador autenticado
+async function initApp() {
+  try {
+    const { data: { user }, error } = await supabaseClient.auth.getUser()
+
+    if (user) {
+      currentUser = user
+      showMainScreen()
+    } else {
+      showLoginScreen()
+    }
+  } catch (error) {
+    console.error("Erro ao inicializar:", error.message)
+    showLoginScreen()
+  }
+}
+
+// Alternar entre Login e Signup
+window.toggleAuthMode = function(e) {
+  e.preventDefault()
+  isSignUp = !isSignUp
+
+  const authBtn = document.getElementById('authBtn')
+  const toggleText = document.getElementById('toggleText')
+  const form = document.getElementById('authForm')
+
+  if (isSignUp) {
+    authBtn.textContent = 'Criar Conta'
+    toggleText.innerHTML = 'Já tens conta? <a href="#" onclick="toggleAuthMode(event)">Entrar</a>'
+  } else {
+    authBtn.textContent = 'Entrar'
+    toggleText.innerHTML = 'Não tens conta? <a href="#" onclick="toggleAuthMode(event)">Criar nova</a>'
+  }
+}
+
+// Gerir autenticação (login ou signup)
+window.handleAuth = async function(e) {
+  e.preventDefault()
+
+  const email = document.getElementById('email').value
+  const password = document.getElementById('password').value
+  const errorDiv = document.getElementById('authError')
+  const successDiv = document.getElementById('authSuccess')
+  const authBtn = document.getElementById('authBtn')
+
+  errorDiv.style.display = 'none'
+  successDiv.style.display = 'none'
+  authBtn.disabled = true
+
+  try {
+    if (isSignUp) {
+      // Signup
+      const { data, error } = await supabaseClient.auth.signUp({
+        email,
+        password
+      })
+
+      if (error) throw error
+
+      successDiv.textContent = '✅ Conta criada! Agora faz login.'
+      successDiv.style.display = 'block'
+      isSignUp = false
+      document.getElementById('authForm').reset()
+
+      setTimeout(() => {
+        toggleAuthMode({ preventDefault: () => {} })
+      }, 2000)
+    } else {
+      // Login
+      const { data, error } = await supabaseClient.auth.signInWithPassword({
+        email,
+        password
+      })
+
+      if (error) throw error
+
+      currentUser = data.user
+      successDiv.textContent = '✅ Login realizado com sucesso!'
+      successDiv.style.display = 'block'
+
+      setTimeout(() => {
+        showMainScreen()
+      }, 1000)
+    }
+  } catch (error) {
+    errorDiv.textContent = `❌ Erro: ${error.message}`
+    errorDiv.style.display = 'block'
+    console.error("Auth error:", error)
+  } finally {
+    authBtn.disabled = false
+  }
+}
+
+// Logout
+window.handleLogout = async function() {
+  try {
+    await supabaseClient.auth.signOut()
+    currentUser = null
+    showLoginScreen()
+  } catch (error) {
+    alert(`❌ Erro ao sair: ${error.message}`)
+  }
+}
+
+// Mostrar tela de login
+function showLoginScreen() {
+  document.getElementById('loginScreen').style.display = 'flex'
+  document.getElementById('mainScreen').style.display = 'none'
+  isSignUp = false
+  document.getElementById('authForm').reset()
+  document.getElementById('authBtn').textContent = 'Entrar'
+}
+
+// Mostrar tela principal
+function showMainScreen() {
+  document.getElementById('loginScreen').style.display = 'none'
+  document.getElementById('mainScreen').style.display = 'block'
+
+  if (currentUser) {
+    document.getElementById('userEmail').textContent = currentUser.email
+  }
+}
 
 // Função global para testar Supabase
 window.testConnection = function() {
@@ -124,3 +251,7 @@ window.testEventsAPI = async function() {
     alert(`❌ Erro: ${error.message}`)
   }
 }
+
+// ============= INICIALIZAÇÃO =============
+// Inicializa a app quando a página carrega
+window.addEventListener('DOMContentLoaded', initApp)
