@@ -8,11 +8,14 @@
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 </head>
 <body>
-  <!-- TELA DE LOGIN -->
+  <!-- SCREEN 1: LOGIN -->
   <div id="loginScreen" class="screen">
     <div class="container">
       <div class="login-card">
-        <h1>🏐 Lousã Volei</h1>
+        <div class="logo-container">
+          <img src="logo.png" alt="Lousã Volei" class="logo-large">
+        </div>
+        <h1>Lousã Volei</h1>
         <p class="subtitle">App de Gestão de Equipas</p>
 
         <form id="authForm" onsubmit="handleAuth(event)">
@@ -39,29 +42,43 @@
     </div>
   </div>
 
-  <!-- TELA PRINCIPAL (Dashboard) -->
-  <div id="mainScreen" class="screen" style="display: none;">
+  <!-- SCREEN 2: DASHBOARD -->
+  <div id="dashboardScreen" class="screen" style="display: none;">
     <div class="container">
       <div class="header">
-        <h1>🏐 Lousã Volei</h1>
+        <div class="header-left">
+          <img src="logo.png" alt="Lousã Volei" class="logo-small">
+          <h1>Lousã Volei</h1>
+        </div>
         <div class="user-info">
           <span id="userEmail"></span>
           <button onclick="handleLogout()" class="btn-logout">Sair</button>
         </div>
       </div>
 
-      <div class="card">
-        <h2>Testes de API</h2>
+      <div class="content">
+        <h2>Minhas Equipas</h2>
+        <div id="teamsContainer" class="teams-grid">
+          <p class="loading">Carregando equipas...</p>
+        </div>
+      </div>
+    </div>
+  </div>
 
-        <h3>Configuração</h3>
-        <button onclick="testConnection()">Testar Conexão Supabase</button>
+  <!-- SCREEN 3: CALENDÁRIO -->
+  <div id="calendarScreen" class="screen" style="display: none;">
+    <div class="container">
+      <div class="header">
+        <button onclick="goToDashboard()" class="btn-back">← Voltar</button>
+        <h1 id="teamName"></h1>
+        <div></div>
+      </div>
 
-        <h3 style="margin-top: 20px;">Grupo 1: Equipas</h3>
-        <button onclick="testGetMyTeams()">Testar getMyTeams()</button>
-        <button onclick="testGetTeamInfo()">Testar getTeamInfo()</button>
-
-        <h3 style="margin-top: 20px;">Eventos</h3>
-        <button onclick="testEventsAPI()">Testar getEvents()</button>
+      <div class="content">
+        <h2>Eventos</h2>
+        <div id="eventsContainer" class="events-list">
+          <p class="loading">Carregando eventos...</p>
+        </div>
       </div>
     </div>
   </div>

@@ -14,6 +14,8 @@ const supabaseClient = createClient(supabaseUrl, supabaseKey)
 // Estado da app
 let isSignUp = false
 let currentUser = null
+let userTeams = []
+let selectedTeam = null
 
 // ============= AUTENTICAÇÃO =============
 
@@ -24,7 +26,7 @@ async function initApp() {
 
     if (user) {
       currentUser = user
-      showMainScreen()
+      showDashboard()
     } else {
       showLoginScreen()
     }
@@ -98,7 +100,7 @@ window.handleAuth = async function(e) {
       successDiv.style.display = 'block'
 
       setTimeout(() => {
-        showMainScreen()
+        showDashboard()
       }, 1000)
     }
   } catch (error) {
@@ -130,13 +132,148 @@ function showLoginScreen() {
   document.getElementById('authBtn').textContent = 'Entrar'
 }
 
-// Mostrar tela principal
-function showMainScreen() {
+// ============= NAVEGAÇÃO =============
+
+// Mostrar Dashboard
+async function showDashboard() {
   document.getElementById('loginScreen').style.display = 'none'
-  document.getElementById('mainScreen').style.display = 'block'
+  document.getElementById('dashboardScreen').style.display = 'flex'
+  document.getElementById('calendarScreen').style.display = 'none'
 
   if (currentUser) {
     document.getElementById('userEmail').textContent = currentUser.email
+  }
+
+  // Carregar equipas
+  await loadUserTeams()
+}
+
+// Mostrar Calendário
+async function showCalendar(teamId) {
+  document.getElementById('loginScreen').style.display = 'none'
+  document.getElementById('dashboardScreen').style.display = 'none'
+  document.getElementById('calendarScreen').style.display = 'flex'
+
+  selectedTeam = teamId
+  const team = userTeams.find(t => t.team_id === teamId)
+  if (team) {
+    document.getElementById('teamName').textContent = team.team.name
+  }
+
+  // Carregar eventos
+  await loadTeamEvents(teamId)
+}
+
+// Voltar ao Dashboard
+function goToDashboard() {
+  showDashboard()
+}
+
+// Carregar equipas do utilizador
+async function loadUserTeams() {
+  try {
+    const teamsContainer = document.getElementById('teamsContainer')
+    teamsContainer.innerHTML = '<p class="loading">Carregando equipas...</p>'
+
+    const { data: { user }, error: authError } = await supabaseClient.auth.getUser()
+    if (authError || !user) throw new Error('Utilizador não autenticado')
+
+    // Query 1: Get user_teams associations
+    const { data: userTeamsData, error: userTeamsError } = await supabaseClient
+      .from('user_teams')
+      .select('team_id, role')
+      .eq('user_id', user.id)
+
+    if (userTeamsError) throw userTeamsError
+
+    if (userTeamsData.length === 0) {
+      teamsContainer.innerHTML = '<p class="loading">Nenhuma equipa associada</p>'
+      return
+    }
+
+    // Query 2: Get team details
+    const teamIds = userTeamsData.map(ut => ut.team_id)
+    const { data: teamsData, error: teamsError } = await supabaseClient
+      .from('teams')
+      .select('id, name, escalao, descricao, ativo')
+      .in('id', teamIds)
+
+    if (teamsError) throw teamsError
+
+    // Combinar dados
+    userTeams = userTeamsData.map(ut => ({
+      team_id: ut.team_id,
+      role: ut.role,
+      team: teamsData.find(t => t.id === ut.team_id)
+    }))
+
+    // Render teams
+    teamsContainer.innerHTML = userTeams.map(ut => `
+      <div class="team-card">
+        <h3>${ut.team.name}</h3>
+        <span class="team-badge">${ut.team.escalao}</span>
+        <div class="team-info">
+          <div><strong>Papel:</strong> ${ut.role}</div>
+          <div><strong>Status:</strong> ${ut.team.ativo ? '✅ Ativo' : '❌ Inativo'}</div>
+        </div>
+        <button class="btn-select" onclick="showCalendar('${ut.team_id}')">Ver Eventos</button>
+      </div>
+    `).join('')
+  } catch (error) {
+    console.error('❌ Erro ao carregar equipas:', error.message)
+    document.getElementById('teamsContainer').innerHTML = `<p class="loading">❌ Erro: ${error.message}</p>`
+  }
+}
+
+// Carregar eventos da equipa
+async function loadTeamEvents(teamId) {
+  try {
+    const eventsContainer = document.getElementById('eventsContainer')
+    eventsContainer.innerHTML = '<p class="loading">Carregando eventos...</p>'
+
+    const { data, error } = await supabaseClient
+      .from('events')
+      .select('id, tipo, data, hora, local, oponente, descricao')
+      .eq('team_id', teamId)
+      .order('data', { ascending: true })
+
+    if (error) throw error
+
+    if (data.length === 0) {
+      eventsContainer.innerHTML = '<p class="loading">Nenhum evento agendado</p>'
+      return
+    }
+
+    // Formatar e renderizar eventos
+    const formatted = data.map(event => {
+      const dataObj = new Date(event.data)
+      const dataFormatada = dataObj.toLocaleDateString('pt-PT', {
+        weekday: 'short',
+        year: 'numeric',
+        month: 'long',
+        day: 'numeric'
+      })
+
+      return `
+        <div class="event-card">
+          <div class="event-header">
+            <span class="event-type ${event.tipo}">${event.tipo === 'treino' ? '🏋️ Treino' : '🎯 Jogo'}</span>
+            <span class="event-date">${dataFormatada}</span>
+          </div>
+          <div class="event-details">
+            <div><strong>Hora:</strong> ${event.hora || 'N/A'}</div>
+            <div><strong>Local:</strong> ${event.local || 'N/A'}</div>
+            ${event.descricao ? `<div><strong>Descrição:</strong> ${event.descricao}</div>` : ''}
+          </div>
+          ${event.oponente ? `<div class="event-opponent">vs ${event.oponente}</div>` : ''}
+        </div>
+      `
+    }).join('')
+
+    eventsContainer.innerHTML = formatted
+  } catch (error) {
+    console.error('❌ Erro ao carregar eventos:', error.message)
+    document.getElementById('eventsContainer').innerHTML = `<p class="loading">❌ Erro: ${error.message}</p>`
   }
 }
 
