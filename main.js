@@ -269,8 +269,9 @@ async function loadTeamEvents(teamId) {
         day: 'numeric'
       })
 
+      const eventId = event.id
       return `
-        <div class="event-card" onclick="showEventDetails('${event.id}')" style="cursor: pointer;">
+        <div class="event-card" data-event-id="${eventId}" style="cursor: pointer;">
           <div class="event-header">
             <span class="event-type ${event.tipo}">${event.tipo === 'treino' ? '🏋️ Treino' : '🎯 Jogo'}</span>
             <span class="event-date">${dataFormatada}</span>
@@ -286,6 +287,16 @@ async function loadTeamEvents(teamId) {
     }).join('')
 
     eventsContainer.innerHTML = formatted
+
+    // Adicionar event listeners aos cards
+    document.querySelectorAll('.event-card').forEach(card => {
+      card.addEventListener('click', function() {
+        const eventId = this.getAttribute('data-event-id')
+        if (eventId) {
+          showEventDetails(eventId)
+        }
+      })
+    })
   } catch (error) {
     console.error('❌ Erro ao carregar eventos:', error.message)
     document.getElementById('eventsContainer').innerHTML = `<p class="loading">❌ Erro: ${error.message}</p>`
