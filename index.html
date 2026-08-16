@@ -13,8 +13,15 @@
       <h1>🏐 SummerCup App</h1>
       <div class="card">
         <p>Bem-vindo! A app está a carregar...</p>
+        <h2>Configuração</h2>
         <button onclick="testConnection()">Testar Conexão Supabase</button>
-        <button onclick="testEventsAPI()" style="margin-left: 10px;">Testar API Eventos</button>
+
+        <h2 style="margin-top: 20px;">Grupo 1: Equipas</h2>
+        <button onclick="testGetMyTeams()">Testar getMyTeams()</button>
+        <button onclick="testGetTeamInfo()" style="margin-left: 10px;">Testar getTeamInfo()</button>
+
+        <h2 style="margin-top: 20px;">Eventos</h2>
+        <button onclick="testEventsAPI()">Testar getEvents()</button>
       </div>
     </div>
   </div>

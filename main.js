@@ -22,18 +22,98 @@ window.testConnection = function() {
   }
 }
 
+// ============= GRUPO 1: TEAMS API (TESTES) =============
+
+// Testar getMyTeams
+window.testGetMyTeams = async function() {
+  try {
+    const { data: { user }, error: authError } = await supabaseClient.auth.getUser()
+
+    if (authError || !user) {
+      alert("❌ Utilizador não autenticado. Faz login primeiro.")
+      return
+    }
+
+    const { data, error } = await supabaseClient
+      .from('user_teams')
+      .select(`
+        team_id,
+        role,
+        teams:team_id (
+          id,
+          name,
+          escalao,
+          descricao,
+          ativo
+        )
+      `)
+      .eq('user_id', user.id)
+
+    if (error) throw error
+
+    console.log("✅ Minhas equipas:", data)
+    alert(`✅ Encontradas ${data.length} equipa(s)!`)
+  } catch (error) {
+    console.error("❌ Erro:", error.message)
+    alert(`❌ Erro: ${error.message}`)
+  }
+}
+
+// Testar getTeamInfo
+window.testGetTeamInfo = async function() {
+  const teamId = prompt("Introduz o UUID da equipa:")
+  if (!teamId) return
+
+  try {
+    const { data, error } = await supabaseClient
+      .from('teams')
+      .select(`
+        id,
+        name,
+        escalao,
+        descricao,
+        ativo,
+        criado_em,
+        atualizado_em,
+        user_teams (
+          user_id,
+          role,
+          users:user_id (
+            id,
+            email,
+            nome,
+            numero,
+            posicao
+          )
+        )
+      `)
+      .eq('id', teamId)
+      .single()
+
+    if (error) throw error
+
+    console.log("✅ Info da equipa:", data)
+    alert(`✅ Equipa "${data.name}" - ${data.user_teams.length} membros`)
+  } catch (error) {
+    console.error("❌ Erro:", error.message)
+    alert(`❌ Erro: ${error.message}`)
+  }
+}
+
+// ============= EVENTOS API (TESTES) =============
+
 // Função global para testar Events API
 window.testEventsAPI = async function() {
   const teamUUID = '2287a93d-ccd0-4af6-85ea-89bd0e20f658' // Substitui com UUID real
-  
+
   try {
     const { data, error } = await supabaseClient
       .from('events')
       .select('*')
       .eq('team_id', teamUUID)
-    
+
     if (error) throw error
-    
+
     console.log("✅ Events carregados:", data)
     alert(`✅ API funcionando! ${data.length} eventos encontrados.`)
   } catch (error) {

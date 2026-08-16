@@ -1,9 +1,93 @@
-import { createClient } from '@supabase/supabase-js'
+// Supabase client será inicializado no main.js via CDN
+// Este ficheiro contém apenas as definições das funções de API
 
-const supabaseUrl = import.meta.env.VITE_SUPABASE_URL
-const supabaseKey = import.meta.env.VITE_SUPABASE_KEY
+// ============= TEAMS API (GRUPO 1) =============
 
-export const supabase = createClient(supabaseUrl, supabaseKey)
+// Retorna todas as equipas do utilizador autenticado
+export async function getMyTeams(supabaseClient) {
+  try {
+    const { data: { user }, error: authError } = await supabaseClient.auth.getUser()
+
+    if (authError || !user) throw new Error('Utilizador não autenticado')
+
+    const { data, error } = await supabaseClient
+      .from('user_teams')
+      .select(`
+        team_id,
+        role,
+        teams:team_id (
+          id,
+          name,
+          escalao,
+          descricao,
+          ativo
+        )
+      `)
+      .eq('user_id', user.id)
+
+    if (error) throw error
+
+    // Transformar para formato mais limpo
+    const teams = data.map(ut => ({
+      team_id: ut.team_id,
+      role: ut.role,
+      team: ut.teams
+    }))
+
+    return { success: true, data: teams }
+  } catch (error) {
+    console.error('Error fetching my teams:', error.message)
+    return { success: false, error: error.message }
+  }
+}
+
+// Retorna informações detalhadas de uma equipa específica
+export async function getTeamInfo(supabaseClient, teamId) {
+  try {
+    const { data, error } = await supabaseClient
+      .from('teams')
+      .select(`
+        id,
+        name,
+        escalao,
+        descricao,
+        ativo,
+        criado_em,
+        atualizado_em,
+        user_teams (
+          user_id,
+          role,
+          users:user_id (
+            id,
+            email,
+            nome,
+            numero,
+            posicao
+          )
+        )
+      `)
+      .eq('id', teamId)
+      .single()
+
+    if (error) throw error
+
+    // Transformar user_teams para formato mais limpo
+    const teamWithMembers = {
+      ...data,
+      members: data.user_teams.map(ut => ({
+        user_id: ut.user_id,
+        role: ut.role,
+        user: ut.users
+      }))
+    }
+    delete teamWithMembers.user_teams
+
+    return { success: true, data: teamWithMembers }
+  } catch (error) {
+    console.error('Error fetching team info:', error.message)
+    return { success: false, error: error.message }
+  }
+}
 
 // ============= EVENTS API =============
 
