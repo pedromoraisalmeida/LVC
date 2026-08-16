@@ -59,41 +59,42 @@ window.testGetMyTeams = async function() {
   }
 }
 
-// Testar getTeamInfo
+// Testar getTeamInfo (simplificado)
 window.testGetTeamInfo = async function() {
-  const teamId = prompt("Introduz o UUID da equipa:")
-  if (!teamId) return
+  const teamId = prompt("Introduz o UUID da equipa (ou leave empty para usar UUID exemplo):")
+  const id = teamId || '2287a93d-ccd0-4af6-85ea-89bd0e20f658'
 
   try {
-    const { data, error } = await supabaseClient
+    // Query 1: Get team info
+    const { data: teamData, error: teamError } = await supabaseClient
       .from('teams')
-      .select(`
-        id,
-        name,
-        escalao,
-        descricao,
-        ativo,
-        criado_em,
-        atualizado_em,
-        user_teams (
-          user_id,
-          role,
-          users:user_id (
-            id,
-            email,
-            nome,
-            numero,
-            posicao
-          )
-        )
-      `)
-      .eq('id', teamId)
+      .select('id, name, escalao, descricao, ativo, criado_em')
+      .eq('id', id)
       .single()
 
-    if (error) throw error
+    if (teamError) throw teamError
 
-    console.log("✅ Info da equipa:", data)
-    alert(`✅ Equipa "${data.name}" - ${data.user_teams.length} membros`)
+    // Query 2: Get team members
+    const { data: membersData, error: membersError } = await supabaseClient
+      .from('user_teams')
+      .select(`
+        user_id,
+        role,
+        users (
+          id,
+          email,
+          nome,
+          numero,
+          posicao
+        )
+      `)
+      .eq('team_id', id)
+
+    if (membersError) throw membersError
+
+    console.log("✅ Info da equipa:", teamData)
+    console.log("✅ Membros:", membersData)
+    alert(`✅ Equipa "${teamData.name}" (${teamData.escalao}) - ${membersData.length} membros`)
   } catch (error) {
     console.error("❌ Erro:", error.message)
     alert(`❌ Erro: ${error.message}`)
@@ -104,18 +105,20 @@ window.testGetTeamInfo = async function() {
 
 // Função global para testar Events API
 window.testEventsAPI = async function() {
-  const teamUUID = '2287a93d-ccd0-4af6-85ea-89bd0e20f658' // Substitui com UUID real
+  const teamUUID = prompt("Introduz o UUID da equipa (ou leave empty para usar UUID exemplo):")
+  const id = teamUUID || '2287a93d-ccd0-4af6-85ea-89bd0e20f658'
 
   try {
     const { data, error } = await supabaseClient
       .from('events')
-      .select('*')
-      .eq('team_id', teamUUID)
+      .select('id, tipo, data, hora, local, oponente, descricao')
+      .eq('team_id', id)
+      .order('data', { ascending: true })
 
     if (error) throw error
 
     console.log("✅ Events carregados:", data)
-    alert(`✅ API funcionando! ${data.length} eventos encontrados.`)
+    alert(`✅ API funcionando! ${data.length} evento(s) encontrado(s).`)
   } catch (error) {
     console.error("❌ Erro:", error.message)
     alert(`❌ Erro: ${error.message}`)
