@@ -975,41 +975,69 @@ async function loadDMsList() {
     container.innerHTML = '<p class="loading">Carregando conversas...</p>'
 
     // Get all DM conversations for current user
-    const { data, error } = await supabaseClient
+    const { data: messagesData, error: messagesError } = await supabaseClient
       .from('messages')
       .select('id, autor_id, destinatario_id, conteudo, criado_em, users:autor_id(nome, email)')
       .or(`autor_id.eq.${currentUser.id},destinatario_id.eq.${currentUser.id}`)
       .eq('tipo_mensagem', 'privada')
       .order('criado_em', { ascending: false })
 
-    if (error) throw error
-
-    if (data.length === 0) {
-      container.innerHTML = '<p class="loading">Nenhuma conversa ainda</p>'
-      return
-    }
+    if (messagesError) throw messagesError
 
     // Agrupar conversas por utilizador
     const conversations = {}
-    data.forEach(msg => {
+    messagesData.forEach(msg => {
       const otherUserId = msg.autor_id === currentUser.id ? msg.destinatario_id : msg.autor_id
       if (!conversations[otherUserId]) {
         conversations[otherUserId] = msg
       }
     })
 
-    // Render conversations
-    const html = Object.entries(conversations)
-      .map(([userId, msg]) => {
-        const otherUser = msg.users
-        return `
-          <div class="dms-conversation" onclick="openDMChat('${userId}', '${otherUser.nome || otherUser.email}')">
-            <div class="name">${otherUser.nome || otherUser.email}</div>
-            <div class="last-message">${msg.conteudo.substring(0, 50)}...</div>
-          </div>
-        `
-      })
-      .join('')
+    // Get all team members
+    const { data: membersData, error: membersError } = await supabaseClient
+      .from('user_teams')
+      .select('user_id, users(id, email, nome)')
+      .eq('team_id', selectedTeam)
+
+    if (membersError) throw membersError
+
+    // Render conversations + available members
+    let html = ''
+
+    // Conversas existentes
+    if (Object.keys(conversations).length > 0) {
+      html += '<div style="padding: 10px 15px; font-weight: 600; color: var(--text-light); font-size: 12px;">CONVERSAS</div>'
+      html += Object.entries(conversations)
+        .map(([userId, msg]) => {
+          const otherUser = msg.users
+          return `
+            <div class="dms-conversation" onclick="openDMChat('${userId}', '${otherUser.nome || otherUser.email}')">
+              <div class="name">${otherUser.nome || otherUser.email}</div>
+              <div class="last-message">${msg.conteudo.substring(0, 50)}...</div>
+            </div>
+          `
+        })
+        .join('')
+    }
+
+    // Utilizadores disponíveis (sem conversa)
+    const availableUsers = membersData.filter(member =>
+      member.user_id !== currentUser.id && !conversations[member.user_id]
+    )
+
+    if (availableUsers.length > 0) {
+      html += '<div style="padding: 10px 15px; font-weight: 600; color: var(--text-light); font-size: 12px; margin-top: 10px;">INICIAR CONVERSA</div>'
+      html += availableUsers.map(member => `
+        <div class="dms-conversation" onclick="openDMChat('${member.user_id}', '${member.users.nome || member.users.email}')">
+          <div class="name">${member.users.nome || member.users.email}</div>
+          <div class="last-message">Clica para iniciar conversa</div>
+        </div>
+      `).join('')
+    }
+
+    if (!html) {
+      html = '<p class="loading">Nenhum utilizador disponível</p>'
+    }
 
     container.innerHTML = html
   } catch (error) {
