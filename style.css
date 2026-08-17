@@ -140,6 +140,19 @@ h3 {
   display: flex;
   flex-direction: column;
   background: var(--light-gray);
+  position: relative;
+}
+
+/* Garantir que screens não visíveis não aparecem */
+.screen[style*="display: none"],
+.screen[style*="visibility: hidden"] {
+  display: none !important;
+  visibility: hidden !important;
+  position: absolute !important;
+  left: -9999px !important;
+  width: 0 !important;
+  height: 0 !important;
+  pointer-events: none !important;
 }
 
 /* LOGIN SCREEN */

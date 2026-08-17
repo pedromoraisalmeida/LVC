@@ -1567,19 +1567,45 @@ async function saveUserTeams(event, userId) {
 
 let editingEventId = null
 
+// Função helper para mostrar uma screen
+function showScreen(screenId) {
+  // Esconder todas as screens
+  const allScreens = [
+    'loginScreen',
+    'dashboardScreen',
+    'calendarScreen',
+    'eventDetailsScreen',
+    'attendanceScreen',
+    'standingsScreen',
+    'chatScreen',
+    'dmsScreen',
+    'managementScreen',
+    'eventsManagementScreen'
+  ]
+
+  allScreens.forEach(id => {
+    const screen = document.getElementById(id)
+    if (screen) {
+      screen.style.display = 'none'
+      screen.style.visibility = 'hidden'
+      screen.style.position = 'absolute'
+      screen.style.left = '-9999px'
+    }
+  })
+
+  // Mostrar screen pedida
+  const screen = document.getElementById(screenId)
+  if (screen) {
+    screen.style.display = 'flex'
+    screen.style.visibility = 'visible'
+    screen.style.position = 'relative'
+    screen.style.left = 'auto'
+  }
+}
+
 // Mostrar screen de gestão de eventos
 async function showEventManagement() {
-  document.getElementById('loginScreen').style.display = 'none'
-  document.getElementById('dashboardScreen').style.display = 'none'
-  document.getElementById('calendarScreen').style.display = 'none'
-  document.getElementById('eventDetailsScreen').style.display = 'none'
-  document.getElementById('attendanceScreen').style.display = 'none'
-  document.getElementById('standingsScreen').style.display = 'none'
-  document.getElementById('chatScreen').style.display = 'none'
-  document.getElementById('dmsScreen').style.display = 'none'
-  document.getElementById('managementScreen').style.display = 'none'
-  document.getElementById('eventsManagementScreen').style.display = 'flex'
-
+  showScreen('eventsManagementScreen')
   await loadEventsList()
 }
 
