@@ -675,7 +675,7 @@ async function updateAttendance(eventId, userId, status, justificationId) {
     if (existingData && existingData.length > 0) {
       const existing = existingData[0]
 
-      // Se clica no mesmo status, remove (DELETE)
+      // Se clica no mesmo status (e sem justification), remove (DELETE)
       if (existing.status === status && !justificationId) {
         const { error: deleteError } = await supabaseClient
           .from('attendances')
@@ -687,7 +687,7 @@ async function updateAttendance(eventId, userId, status, justificationId) {
       } else {
         // Se clica num status diferente, atualiza (UPDATE)
         const updateData = { status, confirmado_em: new Date() }
-        if (status === 'justificado' && justificationId) {
+        if (justificationId) {
           updateData.justification_id = justificationId
         }
 
@@ -708,7 +708,7 @@ async function updateAttendance(eventId, userId, status, justificationId) {
         marcado_em: new Date(),
         confirmado_em: new Date()
       }
-      if (status === 'justificado' && justificationId) {
+      if (justificationId) {
         insertData.justification_id = justificationId
       }
 
