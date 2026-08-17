@@ -1422,13 +1422,18 @@ async function editUserTeams(userId, userEmail) {
   try {
     const container = document.getElementById('usersListContainer')
 
-    // Carregar todas as equipas
+    // Carregar todas as equipas (sem RLS para super_admin conseguir ver todas)
     const { data: teams, error: teamsError } = await supabaseClient
       .from('teams')
       .select('id, name')
       .order('name', { ascending: true })
 
-    if (teamsError) throw teamsError
+    if (teamsError) {
+      console.error('Erro ao carregar equipas:', teamsError)
+      throw teamsError
+    }
+
+    console.log('Equipas carregadas:', teams)
 
     // Carregar equipas do utilizador
     const { data: userTeams, error: userTeamsError } = await supabaseClient
@@ -1436,9 +1441,20 @@ async function editUserTeams(userId, userEmail) {
       .select('team_id, role')
       .eq('user_id', userId)
 
-    if (userTeamsError) throw userTeamsError
+    if (userTeamsError) {
+      console.error('Erro ao carregar user_teams:', userTeamsError)
+      throw userTeamsError
+    }
 
-    const userTeamIds = userTeams.map(ut => ut.team_id)
+    const userTeamsMap = {}
+    userTeams.forEach(ut => {
+      userTeamsMap[ut.team_id] = ut.role
+    })
+
+    if (!teams || teams.length === 0) {
+      alert('Nenhuma equipa disponível. Cria uma equipa primeiro!')
+      return
+    }
 
     const html = `
       <div class="create-user-form">
@@ -1446,13 +1462,20 @@ async function editUserTeams(userId, userEmail) {
         <form onsubmit="saveUserTeams(event, '${userId}')">
           <div id="teamsCheckboxes">
             ${teams.map(team => `
-              <div style="margin-bottom: 12px;">
-                <label style="display: flex; align-items: center; cursor: pointer;">
-                  <input type="checkbox" name="team_${team.id}" value="${team.id}"
-                    ${userTeamIds.includes(team.id) ? 'checked' : ''}
-                    style="margin-right: 10px;">
-                  <span>${team.name}</span>
-                </label>
+              <div style="margin-bottom: 15px; padding: 12px; background: var(--light-gray); border-radius: 6px;">
+                <div style="display: flex; align-items: center; margin-bottom: 8px;">
+                  <input type="checkbox" id="team_${team.id}" name="team_${team.id}" value="${team.id}"
+                    ${userTeamsMap[team.id] ? 'checked' : ''}
+                    style="margin-right: 10px; cursor: pointer;">
+                  <label for="team_${team.id}" style="cursor: pointer; font-weight: 600;">
+                    ${team.name}
+                  </label>
+                </div>
+                <select name="role_${team.id}" style="width: 100%; padding: 6px; border-radius: 4px; border: 1px solid var(--border-color);">
+                  <option value="jogador" ${userTeamsMap[team.id] === 'jogador' || !userTeamsMap[team.id] ? 'selected' : ''}>⚽ Jogador</option>
+                  <option value="treinador" ${userTeamsMap[team.id] === 'treinador' ? 'selected' : ''}>🏋️ Treinador</option>
+                  <option value="coordenador" ${userTeamsMap[team.id] === 'coordenador' ? 'selected' : ''}>📊 Coordenador</option>
+                </select>
               </div>
             `).join('')}
           </div>
@@ -1485,13 +1508,18 @@ async function saveUserTeams(event, userId) {
       .delete()
       .eq('user_id', userId)
 
-    // Adicionar novas associações
+    // Adicionar novas associações com os papéis selecionados
     if (selectedTeams.length > 0) {
-      const newAssociations = selectedTeams.map(teamId => ({
-        user_id: userId,
-        team_id: teamId,
-        role: 'jogador' // Default role
-      }))
+      const newAssociations = selectedTeams.map(teamId => {
+        const roleSelect = form.querySelector(`select[name="role_${teamId}"]`)
+        const role = roleSelect ? roleSelect.value : 'jogador'
+
+        return {
+          user_id: userId,
+          team_id: teamId,
+          role: role
+        }
+      })
 
       const { error } = await supabaseClient
         .from('user_teams')
