@@ -158,6 +158,7 @@ async function showCalendar(teamId) {
   document.getElementById('attendanceScreen').style.display = 'none'
   document.getElementById('standingsScreen').style.display = 'none'
   document.getElementById('chatScreen').style.display = 'none'
+  document.getElementById('dmsScreen').style.display = 'none'
 
   selectedTeam = teamId
   const team = userTeams.find(t => t.team_id === teamId)
@@ -170,6 +171,16 @@ async function showCalendar(teamId) {
 
   // Adicionar botões de ação se não existirem
   const header = document.querySelector('#calendarScreen .header')
+
+  if (!document.getElementById('dmsBtn')) {
+    const dmsBtn = document.createElement('button')
+    dmsBtn.id = 'dmsBtn'
+    dmsBtn.className = 'btn-primary'
+    dmsBtn.textContent = '✉️ DMs'
+    dmsBtn.style.margin = '0 10px 0 0'
+    dmsBtn.onclick = () => showDMs()
+    header.appendChild(dmsBtn)
+  }
 
   if (!document.getElementById('chatBtn')) {
     const chatBtn = document.createElement('button')
@@ -942,6 +953,175 @@ async function sendMessage(event) {
     console.error('❌ Erro ao enviar mensagem:', error.message)
     alert(`Erro: ${error.message}`)
   }
+}
+
+// ============= MENSAGENS DIRETAS (DMs) =============
+
+// Mostrar DMs
+async function showDMs() {
+  document.getElementById('loginScreen').style.display = 'none'
+  document.getElementById('dashboardScreen').style.display = 'none'
+  document.getElementById('calendarScreen').style.display = 'none'
+  document.getElementById('chatScreen').style.display = 'none'
+  document.getElementById('dmsScreen').style.display = 'flex'
+
+  await loadDMsList()
+}
+
+// Carregar lista de conversas DM
+async function loadDMsList() {
+  try {
+    const container = document.getElementById('dmsListContainer')
+    container.innerHTML = '<p class="loading">Carregando conversas...</p>'
+
+    // Get all DM conversations for current user
+    const { data, error } = await supabaseClient
+      .from('messages')
+      .select('id, autor_id, destinatario_id, conteudo, criado_em, users:autor_id(nome, email)')
+      .or(`autor_id.eq.${currentUser.id},destinatario_id.eq.${currentUser.id}`)
+      .eq('tipo_mensagem', 'privada')
+      .order('criado_em', { ascending: false })
+
+    if (error) throw error
+
+    if (data.length === 0) {
+      container.innerHTML = '<p class="loading">Nenhuma conversa ainda</p>'
+      return
+    }
+
+    // Agrupar conversas por utilizador
+    const conversations = {}
+    data.forEach(msg => {
+      const otherUserId = msg.autor_id === currentUser.id ? msg.destinatario_id : msg.autor_id
+      if (!conversations[otherUserId]) {
+        conversations[otherUserId] = msg
+      }
+    })
+
+    // Render conversations
+    const html = Object.entries(conversations)
+      .map(([userId, msg]) => {
+        const otherUser = msg.users
+        return `
+          <div class="dms-conversation" onclick="openDMChat('${userId}', '${otherUser.nome || otherUser.email}')">
+            <div class="name">${otherUser.nome || otherUser.email}</div>
+            <div class="last-message">${msg.conteudo.substring(0, 50)}...</div>
+          </div>
+        `
+      })
+      .join('')
+
+    container.innerHTML = html
+  } catch (error) {
+    console.error('❌ Erro ao carregar DMs:', error.message)
+    document.getElementById('dmsListContainer').innerHTML = `<p class="loading">❌ Erro: ${error.message}</p>`
+  }
+}
+
+// Abrir conversa DM
+async function openDMChat(userId, userName) {
+  document.getElementById('dmsListContainer').style.display = 'none'
+  document.getElementById('dmsChatContainer').style.display = 'flex'
+
+  document.getElementById('dmsChatName').textContent = userName
+  document.getElementById('dmMessageInput').dataset.userId = userId
+
+  await loadDMChat(userId)
+}
+
+// Carregar mensagens da conversa DM
+async function loadDMChat(userId) {
+  try {
+    const container = document.getElementById('dmsMessagesContainer')
+    container.innerHTML = '<p class="loading">Carregando mensagens...</p>'
+
+    const { data, error } = await supabaseClient
+      .from('messages')
+      .select('id, autor_id, destinatario_id, conteudo, criado_em, users:autor_id(nome, email)')
+      .or(
+        `and(autor_id.eq.${currentUser.id},destinatario_id.eq.${userId}),and(autor_id.eq.${userId},destinatario_id.eq.${currentUser.id})`
+      )
+      .eq('tipo_mensagem', 'privada')
+      .order('criado_em', { ascending: true })
+
+    if (error) throw error
+
+    if (data.length === 0) {
+      container.innerHTML = '<p class="loading">Inicia a conversa!</p>'
+      return
+    }
+
+    // Render messages
+    const messagesHtml = data.map(msg => {
+      const isOwn = msg.autor_id === currentUser.id
+      const dataFormatada = new Date(msg.criado_em).toLocaleTimeString('pt-PT', {
+        hour: '2-digit',
+        minute: '2-digit'
+      })
+
+      return `
+        <div class="chat-message ${isOwn ? 'own' : 'other'}">
+          <div class="message-bubble">
+            ${msg.conteudo}
+          </div>
+          <div class="message-meta">
+            ${isOwn ? 'Tu' : msg.users.nome || msg.users.email} • ${dataFormatada}
+          </div>
+        </div>
+      `
+    }).join('')
+
+    container.innerHTML = messagesHtml
+
+    // Scroll para o final
+    setTimeout(() => {
+      container.scrollTop = container.scrollHeight
+    }, 100)
+  } catch (error) {
+    console.error('❌ Erro ao carregar DM:', error.message)
+    document.getElementById('dmsMessagesContainer').innerHTML = `<p class="loading">❌ Erro: ${error.message}</p>`
+  }
+}
+
+// Enviar DM
+async function sendDM(event) {
+  event.preventDefault()
+
+  const input = document.getElementById('dmMessageInput')
+  const conteudo = input.value.trim()
+  const destinatarioId = input.dataset.userId
+
+  if (!conteudo) return
+
+  try {
+    const { error } = await supabaseClient
+      .from('messages')
+      .insert([{
+        team_id: selectedTeam,
+        autor_id: currentUser.id,
+        destinatario_id: destinatarioId,
+        conteudo,
+        tipo_mensagem: 'privada',
+        criado_em: new Date()
+      }])
+
+    if (error) throw error
+
+    input.value = ''
+    input.focus()
+
+    await loadDMChat(destinatarioId)
+  } catch (error) {
+    console.error('❌ Erro ao enviar DM:', error.message)
+    alert(`Erro: ${error.message}`)
+  }
+}
+
+// Fechar chat DM
+function closeDmChat() {
+  document.getElementById('dmsListContainer').style.display = 'block'
+  document.getElementById('dmsChatContainer').style.display = 'none'
+  loadDMsList()
 }
 
 // ============= INICIALIZAÇÃO =============

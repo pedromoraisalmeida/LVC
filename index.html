@@ -134,7 +134,7 @@
     </div>
   </div>
 
-  <!-- SCREEN 7: CHAT -->
+  <!-- SCREEN 7: CHAT DE GRUPO -->
   <div id="chatScreen" class="screen" style="display: none;">
     <div class="container">
       <div class="header">
@@ -153,6 +153,43 @@
             <input type="text" id="messageInput" placeholder="Escreve uma mensagem..." required>
             <button type="submit" class="btn-send">Enviar</button>
           </form>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- SCREEN 8: MENSAGENS DIRETAS (DMs) -->
+  <div id="dmsScreen" class="screen" style="display: none;">
+    <div class="container">
+      <div class="header">
+        <button onclick="goToCalendar()" class="btn-back">← Voltar</button>
+        <h1>💬 Mensagens Diretas</h1>
+        <div></div>
+      </div>
+
+      <div class="content" style="padding: 0; display: flex; gap: 0; height: calc(100vh - 160px);">
+        <!-- Lista de conversas -->
+        <div id="dmsListContainer" class="dms-list">
+          <p class="loading">Carregando conversas...</p>
+        </div>
+
+        <!-- Chat aberto -->
+        <div id="dmsChatContainer" class="dms-chat" style="display: none;">
+          <div id="dmsChatHeader" class="dms-chat-header">
+            <button onclick="closeDmChat()" class="btn-back">← Voltar</button>
+            <h2 id="dmsChatName"></h2>
+          </div>
+
+          <div id="dmsMessagesContainer" class="chat-messages">
+            <p class="loading">Carregando mensagens...</p>
+          </div>
+
+          <div class="chat-input-area">
+            <form onsubmit="sendDM(event)">
+              <input type="text" id="dmMessageInput" placeholder="Escreve uma mensagem privada..." required>
+              <button type="submit" class="btn-send">Enviar</button>
+            </form>
+          </div>
         </div>
       </div>
     </div>
