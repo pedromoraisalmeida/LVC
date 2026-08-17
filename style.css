@@ -1202,28 +1202,454 @@ tbody tr:first-child {
   box-shadow: 0 0 0 3px rgba(44, 90, 160, 0.1);
 }
 
-/* RESPONSIVE */
+/* ============= MOBILE RESPONSIVE (< 768px) ============= */
+
 @media (max-width: 768px) {
+  /* GLOBAL */
+  body {
+    font-size: 16px; /* Evita zoom automático em iOS */
+  }
+
+  .container {
+    padding: 0 12px;
+  }
+
+  /* HEADER */
   .header {
-    flex-direction: column;
+    flex-direction: row;
     gap: 10px;
-    align-items: flex-start;
+    padding: 12px;
+    height: auto;
   }
 
-  .user-info {
-    width: 100%;
-    justify-content: space-between;
+  .header-left {
+    gap: 10px;
+    flex: 1;
   }
 
-  .teams-grid {
-    grid-template-columns: 1fr;
-  }
-
-  .login-card {
-    padding: 30px 20px;
+  .logo-small {
+    width: 40px;
+    height: 40px;
   }
 
   .header h1 {
+    font-size: 18px;
+    margin: 0;
+  }
+
+  .user-info {
+    flex-direction: column;
+    width: 100%;
+    gap: 8px;
+    font-size: 12px;
+  }
+
+  .user-info span {
+    display: block;
+  }
+
+  .btn-logout, .btn-back, .btn-primary {
+    padding: 10px 12px;
+    font-size: 14px;
+  }
+
+  /* SCREENS */
+  #dashboardScreen,
+  #calendarScreen,
+  #eventDetailsScreen,
+  #attendanceScreen,
+  #standingsScreen,
+  #chatScreen,
+  #dmsScreen,
+  #managementScreen,
+  #eventsManagementScreen {
+    padding-top: 120px;
+  }
+
+  .content {
+    margin-top: 0;
+    padding: 12px;
+  }
+
+  /* BUTTONS */
+  .btn-primary {
+    width: 100%;
+    padding: 12px;
+    min-height: 44px;
+    font-size: 16px;
+  }
+
+  .btn-back, .btn-logout {
+    min-height: 40px;
+    padding: 8px 12px;
+  }
+
+  /* LOGIN SCREEN */
+  .login-card {
+    padding: 20px;
+    margin: 20px;
+  }
+
+  .login-card h1 {
+    font-size: 24px;
+  }
+
+  .subtitle {
+    font-size: 13px;
+  }
+
+  .form-group {
+    margin-bottom: 15px;
+  }
+
+  .form-group input {
+    padding: 12px;
+    font-size: 16px;
+  }
+
+  /* TEAMS GRID */
+  .teams-grid {
+    grid-template-columns: 1fr;
+    gap: 12px;
+  }
+
+  .team-card {
+    padding: 15px;
+  }
+
+  .team-card h3 {
+    font-size: 16px;
+  }
+
+  .team-card .btn-select {
+    padding: 12px;
+    min-height: 44px;
+    font-size: 16px;
+  }
+
+  /* EVENTS LIST */
+  .events-list {
+    gap: 10px;
+  }
+
+  .event-card {
+    padding: 15px;
+  }
+
+  .event-header {
+    flex-direction: column;
+    gap: 8px;
+  }
+
+  /* EVENT DETAILS */
+  .event-details-card {
+    padding: 15px;
+    margin: 0;
+  }
+
+  .event-details-card h2 {
     font-size: 20px;
+  }
+
+  .detail-row {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .detail-row value {
+    text-align: left;
+    margin-top: 4px;
+  }
+
+  /* ATTENDANCE */
+  .attendance-item {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 12px;
+  }
+
+  .attendance-status {
+    width: 100%;
+    gap: 6px;
+  }
+
+  .status-btn {
+    flex: 1;
+    padding: 8px 10px;
+    font-size: 12px;
+    min-height: 40px;
+  }
+
+  /* TABLES - Converter em cards */
+  .users-table, .standings-table {
+    padding: 12px;
+    overflow: hidden;
+  }
+
+  .users-table table, .standings-table table {
+    font-size: 13px;
+  }
+
+  .users-table th, .standings-table th {
+    display: none;
+  }
+
+  .users-table tr, .standings-table tr {
+    display: block;
+    border: 1px solid var(--border-color);
+    border-radius: 6px;
+    padding: 12px;
+    margin-bottom: 12px;
+    background: var(--white);
+  }
+
+  .users-table td, .standings-table td {
+    display: flex;
+    justify-content: space-between;
+    padding: 8px 0;
+    border: none;
+  }
+
+  .users-table td::before, .standings-table td::before {
+    content: attr(data-label);
+    font-weight: 600;
+    color: var(--text-light);
+    min-width: 80px;
+  }
+
+  .users-table tbody tr:hover, .standings-table tbody tr:hover {
+    background: var(--white);
+  }
+
+  .position-badge {
+    width: 28px;
+    height: 28px;
+    line-height: 28px;
+    font-size: 11px;
+  }
+
+  /* DMs SCREEN */
+  .dms-list {
+    width: 100%;
+    border-right: none;
+    display: flex;
+    flex-direction: column;
+  }
+
+  .dms-list.show {
+    display: flex !important;
+  }
+
+  .dms-chat {
+    display: none;
+  }
+
+  .dms-chat.show {
+    display: flex !important;
+  }
+
+  .dms-conversation {
+    padding: 12px;
+    font-size: 14px;
+  }
+
+  /* CHAT SCREEN */
+  .chat-messages {
+    padding: 12px;
+  }
+
+  .message-bubble {
+    max-width: 85%;
+    font-size: 14px;
+    padding: 10px 12px;
+  }
+
+  .chat-input-area {
+    padding: 12px;
+    gap: 8px;
+  }
+
+  .chat-input-area input {
+    font-size: 16px;
+    padding: 10px 12px;
+    min-height: 40px;
+  }
+
+  .btn-send {
+    padding: 10px 16px;
+    min-height: 40px;
+    font-size: 14px;
+  }
+
+  /* EVENTS MANAGEMENT */
+  .events-management-list {
+    padding: 12px;
+  }
+
+  .event-item {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 12px;
+    padding: 12px;
+  }
+
+  .event-actions {
+    width: 100%;
+    gap: 8px;
+  }
+
+  .btn-edit, .btn-delete {
+    flex: 1;
+    padding: 10px;
+    min-height: 40px;
+    font-size: 13px;
+  }
+
+  .event-title {
+    font-size: 15px;
+  }
+
+  .event-meta {
+    font-size: 12px;
+  }
+
+  /* FORMS */
+  .form-group select {
+    font-size: 16px;
+    padding: 12px;
+    min-height: 40px;
+  }
+
+  .form-group textarea {
+    font-size: 16px;
+    padding: 12px;
+  }
+
+  .form-row {
+    grid-template-columns: 1fr;
+    gap: 12px;
+  }
+
+  .form-group-inline {
+    flex-direction: column;
+    gap: 12px;
+  }
+
+  /* MODALS */
+  .modal-content {
+    width: 95%;
+    padding: 20px;
+    margin: 20px;
+    max-height: 85vh;
+  }
+
+  .btn-close {
+    font-size: 28px;
+  }
+
+  .form-actions {
+    flex-direction: column;
+    gap: 8px;
+  }
+
+  .form-actions button {
+    width: 100%;
+    padding: 12px;
+    min-height: 44px;
+  }
+
+  /* TEXT SIZES */
+  h1 {
+    font-size: 20px;
+  }
+
+  h2 {
+    font-size: 18px;
+  }
+
+  h3 {
+    font-size: 16px;
+  }
+
+  /* CREATE USER FORM */
+  .create-user-form {
+    max-width: 100%;
+    margin: 0;
+    padding: 15px;
+  }
+}
+
+/* ============= EXTRA SMALL (< 480px) ============= */
+
+@media (max-width: 480px) {
+  /* HEADER */
+  .header {
+    padding: 10px;
+  }
+
+  .header h1 {
+    font-size: 16px;
+  }
+
+  .logo-small {
+    width: 35px;
+    height: 35px;
+  }
+
+  /* CONTENT */
+  #dashboardScreen,
+  #calendarScreen,
+  #eventDetailsScreen,
+  #attendanceScreen,
+  #standingsScreen,
+  #chatScreen,
+  #dmsScreen,
+  #managementScreen,
+  #eventsManagementScreen {
+    padding-top: 100px;
+  }
+
+  .content {
+    padding: 8px;
+  }
+
+  .container {
+    padding: 0 8px;
+  }
+
+  /* BUTTONS */
+  .btn-primary, .btn-back, .btn-logout {
+    font-size: 14px;
+    padding: 10px;
+  }
+
+  /* TEXT */
+  h1 {
+    font-size: 18px;
+  }
+
+  h2 {
+    font-size: 16px;
+  }
+
+  /* CARDS */
+  .team-card, .event-card, .event-details-card {
+    padding: 12px;
+  }
+
+  /* MODALS */
+  .modal-content {
+    width: 98%;
+    padding: 15px;
+  }
+
+  .event-item {
+    padding: 10px;
+  }
+
+  /* ATTENDANCE */
+  .status-btn {
+    padding: 6px 8px;
+    font-size: 11px;
   }
 }
