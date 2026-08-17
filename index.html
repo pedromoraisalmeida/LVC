@@ -195,6 +195,23 @@
     </div>
   </div>
 
+  <!-- SCREEN 9: GESTÃO DE UTILIZADORES (Super Admin) -->
+  <div id="managementScreen" class="screen" style="display: none;">
+    <div class="container">
+      <div class="header">
+        <button onclick="goToDashboard()" class="btn-back">← Voltar</button>
+        <h1>⚙️ Gestão de Utilizadores</h1>
+        <button class="btn-primary" onclick="showCreateUserForm()" style="margin: 0;">➕ Novo Utilizador</button>
+      </div>
+
+      <div class="content">
+        <div id="usersListContainer" class="users-table">
+          <p class="loading">Carregando utilizadores...</p>
+        </div>
+      </div>
+    </div>
+  </div>
+
   <script src="env.js"></script>
   <script src="main.js"></script>
 </body>

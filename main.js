@@ -153,6 +153,30 @@ async function showDashboard() {
 
   // Carregar equipas
   await loadUserTeams()
+
+  // Adicionar botão de gestão se for super_admin
+  const userRole = userTeams.length > 0 ? userTeams[0].role : null
+  const currentUserRole = currentUser ? currentUser.user_metadata?.role : null
+
+  // Verificar role via BD (melhor abordagem)
+  const { data: userData } = await supabaseClient
+    .from('users')
+    .select('role')
+    .eq('id', currentUser.id)
+    .single()
+
+  if (userData && userData.role === 'super_admin') {
+    const header = document.querySelector('#dashboardScreen .header')
+    if (!document.getElementById('managementBtn')) {
+      const btn = document.createElement('button')
+      btn.id = 'managementBtn'
+      btn.className = 'btn-primary'
+      btn.textContent = '⚙️ Gestão'
+      btn.style.margin = '0'
+      btn.onclick = () => showManagement()
+      header.appendChild(btn)
+    }
+  }
 }
 
 // Mostrar Calendário
@@ -1168,6 +1192,207 @@ function closeDmChat() {
   document.getElementById('dmsListContainer').style.display = 'block'
   document.getElementById('dmsChatContainer').style.display = 'none'
   loadDMsList()
+}
+
+// ============= GESTÃO DE UTILIZADORES (Super Admin) =============
+
+// Mostrar screen de gestão
+async function showManagement() {
+  document.getElementById('loginScreen').style.display = 'none'
+  document.getElementById('dashboardScreen').style.display = 'none'
+  document.getElementById('calendarScreen').style.display = 'none'
+  document.getElementById('managementScreen').style.display = 'flex'
+
+  await loadUsersList()
+}
+
+// Carregar lista de utilizadores
+async function loadUsersList() {
+  try {
+    const container = document.getElementById('usersListContainer')
+    container.innerHTML = '<p class="loading">Carregando utilizadores...</p>'
+
+    const { data, error } = await supabaseClient
+      .from('users')
+      .select('id, email, role, nome')
+      .order('email', { ascending: true })
+
+    if (error) throw error
+
+    if (data.length === 0) {
+      container.innerHTML = '<p class="loading">Nenhum utilizador</p>'
+      return
+    }
+
+    const html = `
+      <table>
+        <thead>
+          <tr>
+            <th>Username</th>
+            <th>Nome</th>
+            <th>Papel</th>
+            <th>Ações</th>
+          </tr>
+        </thead>
+        <tbody>
+          ${data.map(user => `
+            <tr>
+              <td><strong>${user.email}</strong></td>
+              <td>${user.nome || '-'}</td>
+              <td>
+                <span class="role-badge ${user.role}">
+                  ${user.role === 'super_admin' ? '👑 Super Admin' :
+                    user.role === 'coordenador' ? '📊 Coordenador' :
+                    user.role === 'treinador' ? '🏋️ Treinador' :
+                    user.role === 'jogador' ? '⚽ Jogador' : user.role}
+                </span>
+              </td>
+              <td>
+                <div class="user-actions">
+                  <button class="btn-edit" onclick="editUser('${user.id}')">Editar</button>
+                  <button class="btn-delete" onclick="deleteUser('${user.id}')">Remover</button>
+                </div>
+              </td>
+            </tr>
+          `).join('')}
+        </tbody>
+      </table>
+    `
+
+    container.innerHTML = html
+  } catch (error) {
+    console.error('❌ Erro ao carregar utilizadores:', error.message)
+    document.getElementById('usersListContainer').innerHTML = `<p class="loading">❌ Erro: ${error.message}</p>`
+  }
+}
+
+// Mostrar form de criar novo utilizador
+function showCreateUserForm() {
+  const container = document.getElementById('usersListContainer')
+
+  const html = `
+    <div class="create-user-form">
+      <h2>Criar Novo Utilizador</h2>
+      <form onsubmit="createUser(event)">
+        <div class="form-group">
+          <label>Username</label>
+          <input type="text" id="newUsername" required placeholder="username">
+        </div>
+
+        <div class="form-group">
+          <label>Nome</label>
+          <input type="text" id="newName" placeholder="Nome completo">
+        </div>
+
+        <div class="form-group">
+          <label>Password</label>
+          <input type="password" id="newPassword" required placeholder="••••••••">
+        </div>
+
+        <div class="form-group">
+          <label>Papel</label>
+          <select id="newRole" required>
+            <option value="">Seleciona um papel</option>
+            <option value="jogador">⚽ Jogador</option>
+            <option value="treinador">🏋️ Treinador</option>
+            <option value="coordenador">📊 Coordenador</option>
+          </select>
+        </div>
+
+        <button type="submit" class="btn-primary" style="width: 100%;">Criar Utilizador</button>
+        <button type="button" class="btn-primary" style="width: 100%; background: var(--text-light); margin-top: 10px;" onclick="loadUsersList()">Cancelar</button>
+      </form>
+    </div>
+  `
+
+  container.innerHTML = html
+}
+
+// Criar novo utilizador
+async function createUser(event) {
+  event.preventDefault()
+
+  const username = document.getElementById('newUsername').value
+  const password = document.getElementById('newPassword').value
+  const nome = document.getElementById('newName').value
+  const role = document.getElementById('newRole').value
+
+  if (!username || !password || !role) {
+    alert('Preenche todos os campos obrigatórios')
+    return
+  }
+
+  try {
+    const email = `${username}@LVC.local`
+
+    // Criar em auth.users
+    const { data: authData, error: authError } = await supabaseClient.auth.admin.createUser({
+      email,
+      password,
+      email_confirmed: true
+    })
+
+    if (authError) throw authError
+
+    // Criar em users
+    const { error: userError } = await supabaseClient
+      .from('users')
+      .insert([{
+        id: authData.user.id,
+        email,
+        role,
+        nome: nome || username
+      }])
+
+    if (userError) throw userError
+
+    alert('✅ Utilizador criado com sucesso!')
+    await loadUsersList()
+  } catch (error) {
+    console.error('❌ Erro:', error.message)
+    alert(`Erro: ${error.message}`)
+  }
+}
+
+// Editar utilizador (por enquanto apenas role)
+async function editUser(userId) {
+  const newRole = prompt('Novo papel (jogador/treinador/coordenador/super_admin):')
+  if (!newRole) return
+
+  try {
+    const { error } = await supabaseClient
+      .from('users')
+      .update({ role: newRole })
+      .eq('id', userId)
+
+    if (error) throw error
+
+    alert('✅ Utilizador atualizado!')
+    await loadUsersList()
+  } catch (error) {
+    console.error('❌ Erro:', error.message)
+    alert(`Erro: ${error.message}`)
+  }
+}
+
+// Remover utilizador
+async function deleteUser(userId) {
+  if (!confirm('Tens a certeza que queres remover este utilizador?')) return
+
+  try {
+    const { error } = await supabaseClient
+      .from('users')
+      .delete()
+      .eq('id', userId)
+
+    if (error) throw error
+
+    alert('✅ Utilizador removido!')
+    await loadUsersList()
+  } catch (error) {
+    console.error('❌ Erro:', error.message)
+    alert(`Erro: ${error.message}`)
+  }
 }
 
 // ============= INICIALIZAÇÃO =============
