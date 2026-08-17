@@ -74,7 +74,7 @@ window.handleAuth = async function(e) {
   try {
     if (isSignUp) {
       // Signup - converter username para email válido
-      const email = `${username}@louisavolei.local`
+      const email = `${username}@LVC.local`
 
       const { data, error } = await supabaseClient.auth.signUp({
         email,
@@ -93,7 +93,7 @@ window.handleAuth = async function(e) {
       }, 2000)
     } else {
       // Login - converter username para email válido
-      const email = `${username}@louisavolei.local`
+      const email = `${username}@LVC.local`
 
       const { data, error } = await supabaseClient.auth.signInWithPassword({
         email,
