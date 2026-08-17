@@ -588,15 +588,22 @@ async function loadAttendance(eventId) {
     // Get attendances for this event
     const { data: attendanceData, error: attendanceError } = await supabaseClient
       .from('attendances')
-      .select('user_id, status')
+      .select('user_id, status, justification_id')
       .eq('event_id', eventId)
 
     if (attendanceError) throw attendanceError
 
+    // Get justifications
+    const { data: justificationsData, error: justificationsError } = await supabaseClient
+      .from('justifications')
+      .select('id, tipo, descricao')
+
+    if (justificationsError) throw justificationsError
+
     // Build attendance map
     const attendanceMap = {}
     attendanceData.forEach(a => {
-      attendanceMap[a.user_id] = a.status
+      attendanceMap[a.user_id] = { status: a.status, justification_id: a.justification_id }
     })
 
     // Render attendance list
@@ -607,7 +614,11 @@ async function loadAttendance(eventId) {
       </p>
       <div class="attendance-list">
         ${membersData.map(member => {
-          const status = attendanceMap[member.user_id] || 'não_marcado'
+          const attendance = attendanceMap[member.user_id] || { status: 'não_marcado', justification_id: null }
+          const justificationOptions = justificationsData.map(j =>
+            `<option value="${j.id}" ${attendance.justification_id === j.id ? 'selected' : ''}>${j.tipo}</option>`
+          ).join('')
+
           return `
             <div class="attendance-item">
               <div class="attendance-player">
@@ -615,19 +626,26 @@ async function loadAttendance(eventId) {
                 <div class="position">${member.users.posicao || 'N/A'} #${member.users.numero || '-'}</div>
               </div>
               <div class="attendance-status">
-                <button class="status-btn ${status === 'confirmado' ? 'active present' : ''}"
-                  onclick="updateAttendance('${eventId}', '${member.user_id}', 'confirmado')">
+                <button class="status-btn ${attendance.status === 'confirmado' ? 'active present' : ''}"
+                  onclick="updateAttendance('${eventId}', '${member.user_id}', 'confirmado', null)">
                   ✅ Presente
                 </button>
-                <button class="status-btn ${status === 'ausente' ? 'active absent' : ''}"
-                  onclick="updateAttendance('${eventId}', '${member.user_id}', 'ausente')">
+                <button class="status-btn ${attendance.status === 'ausente' ? 'active absent' : ''}"
+                  onclick="updateAttendance('${eventId}', '${member.user_id}', 'ausente', null)">
                   ❌ Falta
                 </button>
-                <button class="status-btn ${status === 'justificado' ? 'active justified' : ''}"
-                  onclick="updateAttendance('${eventId}', '${member.user_id}', 'justificado')">
+                <button class="status-btn ${attendance.status === 'justificado' ? 'active justified' : ''}"
+                  onclick="toggleJustificationSelect('${member.user_id}')">
                   📝 Justif.
                 </button>
               </div>
+              ${attendance.status === 'justificado' ? `
+                <select onchange="updateAttendance('${eventId}', '${member.user_id}', 'justificado', this.value)"
+                  style="margin-top: 10px; padding: 6px; border-radius: 4px; border: 1px solid var(--border-color);">
+                  <option value="">Escolher motivo...</option>
+                  ${justificationOptions}
+                </select>
+              ` : ''}
             </div>
           `
         }).join('')}
@@ -643,7 +661,7 @@ async function loadAttendance(eventId) {
 }
 
 // Atualizar presença de um utilizador
-async function updateAttendance(eventId, userId, status) {
+async function updateAttendance(eventId, userId, status, justificationId) {
   try {
     // Check if attendance record exists
     const { data: existingData, error: checkError } = await supabaseClient
@@ -658,7 +676,7 @@ async function updateAttendance(eventId, userId, status) {
       const existing = existingData[0]
 
       // Se clica no mesmo status, remove (DELETE)
-      if (existing.status === status) {
+      if (existing.status === status && !justificationId) {
         const { error: deleteError } = await supabaseClient
           .from('attendances')
           .delete()
@@ -668,9 +686,14 @@ async function updateAttendance(eventId, userId, status) {
         if (deleteError) throw deleteError
       } else {
         // Se clica num status diferente, atualiza (UPDATE)
+        const updateData = { status, confirmado_em: new Date() }
+        if (status === 'justificado' && justificationId) {
+          updateData.justification_id = justificationId
+        }
+
         const { error: updateError } = await supabaseClient
           .from('attendances')
-          .update({ status, confirmado_em: new Date() })
+          .update(updateData)
           .eq('event_id', eventId)
           .eq('user_id', userId)
 
@@ -678,15 +701,20 @@ async function updateAttendance(eventId, userId, status) {
       }
     } else {
       // Se não existe, cria novo (INSERT)
+      const insertData = {
+        event_id: eventId,
+        user_id: userId,
+        status,
+        marcado_em: new Date(),
+        confirmado_em: new Date()
+      }
+      if (status === 'justificado' && justificationId) {
+        insertData.justification_id = justificationId
+      }
+
       const { error: insertError } = await supabaseClient
         .from('attendances')
-        .insert([{
-          event_id: eventId,
-          user_id: userId,
-          status,
-          marcado_em: new Date(),
-          confirmado_em: new Date()
-        }])
+        .insert([insertData])
 
       if (insertError) throw insertError
     }
