@@ -157,6 +157,7 @@ async function showCalendar(teamId) {
   document.getElementById('eventDetailsScreen').style.display = 'none'
   document.getElementById('attendanceScreen').style.display = 'none'
   document.getElementById('standingsScreen').style.display = 'none'
+  document.getElementById('chatScreen').style.display = 'none'
 
   selectedTeam = teamId
   const team = userTeams.find(t => t.team_id === teamId)
