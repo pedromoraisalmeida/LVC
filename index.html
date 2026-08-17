@@ -134,6 +134,30 @@
     </div>
   </div>
 
+  <!-- SCREEN 7: CHAT -->
+  <div id="chatScreen" class="screen" style="display: none;">
+    <div class="container">
+      <div class="header">
+        <button onclick="goToDashboard()" class="btn-back">← Voltar</button>
+        <h1 id="chatTeamName">Chat</h1>
+        <div></div>
+      </div>
+
+      <div class="content" style="padding: 0; display: flex; flex-direction: column; height: calc(100vh - 160px);">
+        <div id="messagesContainer" class="chat-messages">
+          <p class="loading">Carregando mensagens...</p>
+        </div>
+
+        <div class="chat-input-area">
+          <form onsubmit="sendMessage(event)">
+            <input type="text" id="messageInput" placeholder="Escreve uma mensagem..." required>
+            <button type="submit" class="btn-send">Enviar</button>
+          </form>
+        </div>
+      </div>
+    </div>
+  </div>
+
   <script src="env.js"></script>
   <script src="main.js"></script>
 </body>

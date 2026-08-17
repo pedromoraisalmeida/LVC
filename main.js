@@ -16,6 +16,7 @@ let isSignUp = false
 let currentUser = null
 let userTeams = []
 let selectedTeam = null
+let chatSubscription = null
 
 // ============= AUTENTICAÇÃO =============
 
@@ -166,16 +167,27 @@ async function showCalendar(teamId) {
   // Carregar eventos
   await loadTeamEvents(teamId)
 
-  // Adicionar botão de classificação se não existir
+  // Adicionar botões de ação se não existirem
   const header = document.querySelector('#calendarScreen .header')
+
+  if (!document.getElementById('chatBtn')) {
+    const chatBtn = document.createElement('button')
+    chatBtn.id = 'chatBtn'
+    chatBtn.className = 'btn-primary'
+    chatBtn.textContent = '💬 Chat'
+    chatBtn.style.margin = '0 10px 0 0'
+    chatBtn.onclick = () => showChat()
+    header.appendChild(chatBtn)
+  }
+
   if (!document.getElementById('standingsBtn')) {
-    const btn = document.createElement('button')
-    btn.id = 'standingsBtn'
-    btn.className = 'btn-primary'
-    btn.textContent = '📊 Classificação'
-    btn.style.margin = '0'
-    btn.onclick = () => showStandings()
-    header.appendChild(btn)
+    const standingsBtn = document.createElement('button')
+    standingsBtn.id = 'standingsBtn'
+    standingsBtn.className = 'btn-primary'
+    standingsBtn.textContent = '📊 Classificação'
+    standingsBtn.style.margin = '0'
+    standingsBtn.onclick = () => showStandings()
+    header.appendChild(standingsBtn)
   }
 }
 
@@ -801,6 +813,133 @@ async function loadStandings(teamId) {
   } catch (error) {
     console.error('❌ Erro ao carregar classificação:', error.message)
     document.getElementById('standingsContainer').innerHTML = `<p class="loading">❌ Erro: ${error.message}</p>`
+  }
+}
+
+// ============= CHAT =============
+
+// Mostrar Chat
+async function showChat() {
+  document.getElementById('dashboardScreen').style.display = 'none'
+  document.getElementById('calendarScreen').style.display = 'none'
+  document.getElementById('chatScreen').style.display = 'flex'
+
+  const team = userTeams.find(t => t.team_id === selectedTeam)
+  if (team) {
+    document.getElementById('chatTeamName').textContent = `💬 ${team.team.name}`
+  }
+
+  // Carregar mensagens
+  await loadChatMessages(selectedTeam)
+
+  // Subscrever a mensagens em tempo real
+  subscribeToMessages(selectedTeam)
+}
+
+// Carregar mensagens do chat
+async function loadChatMessages(teamId) {
+  try {
+    const container = document.getElementById('messagesContainer')
+    container.innerHTML = '<p class="loading">Carregando mensagens...</p>'
+
+    const { data, error } = await supabaseClient
+      .from('messages')
+      .select('id, autor_id, titulo, conteudo, criado_em, users:autor_id(nome, email)')
+      .eq('team_id', teamId)
+      .order('criado_em', { ascending: true })
+      .limit(50)
+
+    if (error) throw error
+
+    if (data.length === 0) {
+      container.innerHTML = '<p class="loading">Nenhuma mensagem ainda. Sê o primeiro a escrever!</p>'
+      return
+    }
+
+    // Renderizar mensagens
+    const messagesHtml = data.map(msg => {
+      const isOwn = msg.autor_id === currentUser.id
+      const dataFormatada = new Date(msg.criado_em).toLocaleTimeString('pt-PT', {
+        hour: '2-digit',
+        minute: '2-digit'
+      })
+
+      return `
+        <div class="chat-message ${isOwn ? 'own' : 'other'}">
+          <div class="message-bubble">
+            ${msg.conteudo}
+          </div>
+          <div class="message-meta">
+            ${isOwn ? 'Tu' : msg.users.nome || msg.users.email} • ${dataFormatada}
+          </div>
+        </div>
+      `
+    }).join('')
+
+    container.innerHTML = messagesHtml
+
+    // Scroll para o final
+    setTimeout(() => {
+      container.scrollTop = container.scrollHeight
+    }, 100)
+  } catch (error) {
+    console.error('❌ Erro ao carregar mensagens:', error.message)
+    document.getElementById('messagesContainer').innerHTML = `<p class="loading">❌ Erro: ${error.message}</p>`
+  }
+}
+
+// Subscrever a mensagens em tempo real
+function subscribeToMessages(teamId) {
+  // Remover subscrição anterior se houver
+  if (chatSubscription) {
+    supabaseClient.removeChannel(chatSubscription)
+  }
+
+  // Nova subscrição
+  chatSubscription = supabaseClient
+    .channel(`messages:team_id=eq.${teamId}`)
+    .on(
+      'postgres_changes',
+      { event: 'INSERT', schema: 'public', table: 'messages', filter: `team_id=eq.${teamId}` },
+      (payload) => {
+        // Mensagem nova recebida
+        loadChatMessages(teamId)
+      }
+    )
+    .subscribe()
+}
+
+// Enviar mensagem
+async function sendMessage(event) {
+  event.preventDefault()
+
+  const input = document.getElementById('messageInput')
+  const conteudo = input.value.trim()
+
+  if (!conteudo) return
+
+  try {
+    const { error } = await supabaseClient
+      .from('messages')
+      .insert([{
+        team_id: selectedTeam,
+        autor_id: currentUser.id,
+        conteudo,
+        tipo: 'equipa',
+        criado_em: new Date()
+      }])
+
+    if (error) throw error
+
+    // Limpar input
+    input.value = ''
+    input.focus()
+
+    // Recarregar mensagens
+    await loadChatMessages(selectedTeam)
+  } catch (error) {
+    console.error('❌ Erro ao enviar mensagem:', error.message)
+    alert(`Erro: ${error.message}`)
   }
 }
 
