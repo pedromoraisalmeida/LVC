@@ -648,23 +648,36 @@ async function updateAttendance(eventId, userId, status) {
     // Check if attendance record exists
     const { data: existingData, error: checkError } = await supabaseClient
       .from('attendances')
-      .select('id')
+      .select('id, status')
       .eq('event_id', eventId)
       .eq('user_id', userId)
 
     if (checkError) throw checkError
 
     if (existingData && existingData.length > 0) {
-      // Update existing record
-      const { error: updateError } = await supabaseClient
-        .from('attendances')
-        .update({ status, confirmado_em: new Date() })
-        .eq('event_id', eventId)
-        .eq('user_id', userId)
+      const existing = existingData[0]
 
-      if (updateError) throw updateError
+      // Se clica no mesmo status, remove (DELETE)
+      if (existing.status === status) {
+        const { error: deleteError } = await supabaseClient
+          .from('attendances')
+          .delete()
+          .eq('event_id', eventId)
+          .eq('user_id', userId)
+
+        if (deleteError) throw deleteError
+      } else {
+        // Se clica num status diferente, atualiza (UPDATE)
+        const { error: updateError } = await supabaseClient
+          .from('attendances')
+          .update({ status, confirmado_em: new Date() })
+          .eq('event_id', eventId)
+          .eq('user_id', userId)
+
+        if (updateError) throw updateError
+      }
     } else {
-      // Create new record
+      // Se não existe, cria novo (INSERT)
       const { error: insertError } = await supabaseClient
         .from('attendances')
         .insert([{
