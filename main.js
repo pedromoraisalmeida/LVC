@@ -44,13 +44,15 @@ window.toggleAuthMode = function(e) {
 
   const authBtn = document.getElementById('authBtn')
   const toggleText = document.getElementById('toggleText')
-  const form = document.getElementById('authForm')
+  const usernameInput = document.getElementById('username')
 
   if (isSignUp) {
     authBtn.textContent = 'Criar Conta'
+    usernameInput.placeholder = 'escolhe um username'
     toggleText.innerHTML = 'Já tens conta? <a href="#" onclick="toggleAuthMode(event)">Entrar</a>'
   } else {
     authBtn.textContent = 'Entrar'
+    usernameInput.placeholder = 'seu username'
     toggleText.innerHTML = 'Não tens conta? <a href="#" onclick="toggleAuthMode(event)">Criar nova</a>'
   }
 }
@@ -59,7 +61,7 @@ window.toggleAuthMode = function(e) {
 window.handleAuth = async function(e) {
   e.preventDefault()
 
-  const email = document.getElementById('email').value
+  const username = document.getElementById('username').value
   const password = document.getElementById('password').value
   const errorDiv = document.getElementById('authError')
   const successDiv = document.getElementById('authSuccess')
@@ -73,7 +75,7 @@ window.handleAuth = async function(e) {
     if (isSignUp) {
       // Signup
       const { data, error } = await supabaseClient.auth.signUp({
-        email,
+        email: username,
         password
       })
 
@@ -90,7 +92,7 @@ window.handleAuth = async function(e) {
     } else {
       // Login
       const { data, error } = await supabaseClient.auth.signInWithPassword({
-        email,
+        email: username,
         password
       })
 
