@@ -1502,17 +1502,29 @@ async function saveUserTeams(event, userId) {
     const selectedTeams = Array.from(form.querySelectorAll('input[type="checkbox"]:checked'))
       .map(cb => cb.value)
 
+    console.log('Utilizador ID:', userId)
+    console.log('Equipas selecionadas:', selectedTeams)
+
     // Remover associações antigas
-    await supabaseClient
+    const { error: deleteError } = await supabaseClient
       .from('user_teams')
       .delete()
       .eq('user_id', userId)
+
+    if (deleteError) {
+      console.error('Erro ao deletar:', deleteError)
+      throw deleteError
+    }
+
+    console.log('Associações antigas removidas')
 
     // Adicionar novas associações com os papéis selecionados
     if (selectedTeams.length > 0) {
       const newAssociations = selectedTeams.map(teamId => {
         const roleSelect = form.querySelector(`select[name="role_${teamId}"]`)
         const role = roleSelect ? roleSelect.value : 'jogador'
+
+        console.log(`Equipa ${teamId} com role ${role}`)
 
         return {
           user_id: userId,
@@ -1521,17 +1533,24 @@ async function saveUserTeams(event, userId) {
         }
       })
 
-      const { error } = await supabaseClient
+      console.log('Associações a inserir:', newAssociations)
+
+      const { error: insertError } = await supabaseClient
         .from('user_teams')
         .insert(newAssociations)
 
-      if (error) throw error
+      if (insertError) {
+        console.error('Erro ao inserir:', insertError)
+        throw insertError
+      }
+
+      console.log('Associações inseridas com sucesso')
     }
 
     alert('✅ Equipas atualizadas!')
     await loadUsersList()
   } catch (error) {
-    console.error('❌ Erro:', error.message)
+    console.error('❌ Erro:', error)
     alert(`Erro: ${error.message}`)
   }
 }
