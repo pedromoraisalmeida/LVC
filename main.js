@@ -996,7 +996,7 @@ async function loadDMsList() {
     // Get all team members
     const { data: membersData, error: membersError } = await supabaseClient
       .from('user_teams')
-      .select('user_id, users(id, email, nome)')
+      .select('user_id, role, users(id, email, nome)')
       .eq('team_id', selectedTeam)
 
     if (membersError) throw membersError
@@ -1021,9 +1021,20 @@ async function loadDMsList() {
     }
 
     // Utilizadores disponíveis (sem conversa)
-    const availableUsers = membersData.filter(member =>
+    // Restrições: jogadores só podem DM com treinadores/coordenador
+    const currentTeam = userTeams.find(t => t.team_id === selectedTeam)
+    const isPlayerUser = currentTeam && currentTeam.role === 'jogador'
+
+    let availableUsers = membersData.filter(member =>
       member.user_id !== currentUser.id && !conversations[member.user_id]
     )
+
+    // Se é jogador, filtrar apenas para treinadores e coordenador
+    if (isPlayerUser) {
+      availableUsers = availableUsers.filter(member =>
+        member.role === 'treinador' || member.role === 'coordenador'
+      )
+    }
 
     if (availableUsers.length > 0) {
       html += '<div style="padding: 10px 15px; font-weight: 600; color: var(--text-light); font-size: 12px; margin-top: 10px;">INICIAR CONVERSA</div>'
