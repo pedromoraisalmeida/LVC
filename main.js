@@ -635,7 +635,7 @@ async function loadAttendance(eventId) {
                   ❌ Falta
                 </button>
                 <button class="status-btn ${attendance.status === 'justificado' ? 'active justified' : ''}"
-                  onclick="toggleJustificationSelect('${member.user_id}')">
+                  onclick="updateAttendance('${eventId}', '${member.user_id}', 'justificado', null)">
                   📝 Justif.
                 </button>
               </div>
