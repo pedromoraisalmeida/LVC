@@ -153,6 +153,9 @@ async function showCalendar(teamId) {
   document.getElementById('loginScreen').style.display = 'none'
   document.getElementById('dashboardScreen').style.display = 'none'
   document.getElementById('calendarScreen').style.display = 'flex'
+  document.getElementById('eventDetailsScreen').style.display = 'none'
+  document.getElementById('attendanceScreen').style.display = 'none'
+  document.getElementById('standingsScreen').style.display = 'none'
 
   selectedTeam = teamId
   const team = userTeams.find(t => t.team_id === teamId)
@@ -162,6 +165,18 @@ async function showCalendar(teamId) {
 
   // Carregar eventos
   await loadTeamEvents(teamId)
+
+  // Adicionar botão de classificação se não existir
+  const header = document.querySelector('#calendarScreen .header')
+  if (!document.getElementById('standingsBtn')) {
+    const btn = document.createElement('button')
+    btn.id = 'standingsBtn'
+    btn.className = 'btn-primary'
+    btn.textContent = '📊 Classificação'
+    btn.style.margin = '0'
+    btn.onclick = () => showStandings()
+    header.appendChild(btn)
+  }
 }
 
 // Voltar ao Dashboard
@@ -182,6 +197,22 @@ async function showEventDetails(eventId) {
   document.getElementById('eventDetailsScreen').style.display = 'flex'
 
   await loadEventDetails(eventId)
+}
+
+// Mostrar Presenças
+async function showAttendance(eventId) {
+  document.getElementById('eventDetailsScreen').style.display = 'none'
+  document.getElementById('attendanceScreen').style.display = 'flex'
+
+  await loadAttendance(eventId)
+}
+
+// Mostrar Classificações
+async function showStandings() {
+  document.getElementById('calendarScreen').style.display = 'none'
+  document.getElementById('standingsScreen').style.display = 'flex'
+
+  await loadStandings(selectedTeam)
 }
 
 // Carregar equipas do utilizador
@@ -390,6 +421,13 @@ async function loadEventDetails(eventId) {
       `
     }
 
+    html += `
+      <div style="display: flex; gap: 10px; margin-top: 30px;">
+        <button class="btn-primary" style="flex: 1;" onclick="showAttendance('${event.id}')">📋 Ver Presenças</button>
+        <button class="btn-primary" style="flex: 1; background: var(--primary-dark);" onclick="goToCalendar()">← Voltar</button>
+      </div>
+    `
+
     container.innerHTML = html
   } catch (error) {
     console.error('❌ Erro ao carregar detalhes:', error.message)
@@ -521,6 +559,206 @@ window.testEventsAPI = async function() {
   } catch (error) {
     console.error("❌ Erro:", error.message)
     alert(`❌ Erro: ${error.message}`)
+  }
+}
+
+// Carregar presenças de um evento
+async function loadAttendance(eventId) {
+  try {
+    const container = document.getElementById('attendanceContainer')
+    container.innerHTML = '<p class="loading">Carregando presenças...</p>'
+
+    // Get event details to show team members
+    const { data: eventData, error: eventError } = await supabaseClient
+      .from('events')
+      .select('id, data, tipo, oponente')
+      .eq('id', eventId)
+      .single()
+
+    if (eventError) throw eventError
+
+    // Get team members
+    const { data: membersData, error: membersError } = await supabaseClient
+      .from('user_teams')
+      .select('user_id, users(id, email, nome, numero, posicao)')
+      .eq('team_id', selectedTeam)
+
+    if (membersError) throw membersError
+
+    // Get attendances for this event
+    const { data: attendanceData, error: attendanceError } = await supabaseClient
+      .from('attendances')
+      .select('user_id, status')
+      .eq('event_id', eventId)
+
+    if (attendanceError) throw attendanceError
+
+    // Build attendance map
+    const attendanceMap = {}
+    attendanceData.forEach(a => {
+      attendanceMap[a.user_id] = a.status
+    })
+
+    // Render attendance list
+    const html = `
+      <h2>${eventData.tipo === 'treino' ? '🏋️ Presenças - Treino' : '🎯 Presenças - Jogo'}</h2>
+      <p style="color: var(--text-light); margin-bottom: 20px;">
+        ${new Date(eventData.data).toLocaleDateString('pt-PT')} ${eventData.oponente ? `vs ${eventData.oponente}` : ''}
+      </p>
+      <div class="attendance-list">
+        ${membersData.map(member => {
+          const status = attendanceMap[member.user_id] || 'não_marcado'
+          return `
+            <div class="attendance-item">
+              <div class="attendance-player">
+                <div class="name">${member.users.nome || member.users.email}</div>
+                <div class="position">${member.users.posicao || 'N/A'} #${member.users.numero || '-'}</div>
+              </div>
+              <div class="attendance-status">
+                <button class="status-btn ${status === 'confirmado' ? 'active present' : ''}"
+                  onclick="updateAttendance('${eventId}', '${member.user_id}', 'confirmado')">
+                  ✅ Presente
+                </button>
+                <button class="status-btn ${status === 'ausente' ? 'active absent' : ''}"
+                  onclick="updateAttendance('${eventId}', '${member.user_id}', 'ausente')">
+                  ❌ Falta
+                </button>
+                <button class="status-btn ${status === 'justificado' ? 'active justified' : ''}"
+                  onclick="updateAttendance('${eventId}', '${member.user_id}', 'justificado')">
+                  📝 Justif.
+                </button>
+              </div>
+            </div>
+          `
+        }).join('')}
+      </div>
+      <button class="btn-primary" onclick="goToCalendar()" style="margin-top: 30px;">← Voltar ao Calendário</button>
+    `
+
+    container.innerHTML = html
+  } catch (error) {
+    console.error('❌ Erro ao carregar presenças:', error.message)
+    document.getElementById('attendanceContainer').innerHTML = `<p class="loading">❌ Erro: ${error.message}</p>`
+  }
+}
+
+// Atualizar presença de um utilizador
+async function updateAttendance(eventId, userId, status) {
+  try {
+    // Check if attendance record exists
+    const { data: existingData, error: checkError } = await supabaseClient
+      .from('attendances')
+      .select('id')
+      .eq('event_id', eventId)
+      .eq('user_id', userId)
+      .single()
+
+    if (existingData) {
+      // Update existing record
+      const { error: updateError } = await supabaseClient
+        .from('attendances')
+        .update({ status, confirmado_em: new Date() })
+        .eq('event_id', eventId)
+        .eq('user_id', userId)
+
+      if (updateError) throw updateError
+    } else {
+      // Create new record
+      const { error: insertError } = await supabaseClient
+        .from('attendances')
+        .insert([{
+          event_id: eventId,
+          user_id: userId,
+          status,
+          marcado_em: new Date(),
+          confirmado_em: new Date()
+        }])
+
+      if (insertError) throw insertError
+    }
+
+    // Reload attendance
+    await loadAttendance(eventId)
+  } catch (error) {
+    console.error('❌ Erro ao atualizar presença:', error.message)
+    alert(`Erro: ${error.message}`)
+  }
+}
+
+// Carregar classificações
+async function loadStandings(teamId) {
+  try {
+    const container = document.getElementById('standingsContainer')
+    container.innerHTML = '<p class="loading">Carregando classificação...</p>'
+
+    // Get competition series for this team
+    const { data: seriesData, error: seriesError } = await supabaseClient
+      .from('competition_series')
+      .select('id, nome, temporada')
+      .eq('team_id', teamId)
+      .limit(1)
+      .single()
+
+    if (seriesError || !seriesData) {
+      container.innerHTML = '<p class="loading">Nenhuma série de competição encontrada</p>'
+      return
+    }
+
+    // Get standings for this series
+    const { data: standingsData, error: standingsError } = await supabaseClient
+      .from('competition_standings')
+      .select('*')
+      .eq('serie_id', seriesData.id)
+      .order('posicao', { ascending: true })
+
+    if (standingsError) throw standingsError
+
+    if (standingsData.length === 0) {
+      container.innerHTML = '<p class="loading">Sem classificações registadas</p>'
+      return
+    }
+
+    // Build table
+    const html = `
+      <h2>Classificação - ${seriesData.nome}</h2>
+      <p style="color: var(--text-light); margin-bottom: 20px;">Temporada ${seriesData.temporada}</p>
+      <table>
+        <thead>
+          <tr>
+            <th>#</th>
+            <th>Equipa</th>
+            <th>Jogos</th>
+            <th>V</th>
+            <th>D</th>
+            <th>Sets +</th>
+            <th>Sets -</th>
+            <th>Pontos</th>
+          </tr>
+        </thead>
+        <tbody>
+          ${standingsData.map((row, idx) => `
+            <tr class="standings-row-${row.posicao}">
+              <td>
+                <span class="position-badge">${row.posicao}</span>
+              </td>
+              <td><strong>${row.equipa_nome}</strong></td>
+              <td>${row.jogos}</td>
+              <td>${row.vitorias}</td>
+              <td>${row.derrotas}</td>
+              <td>${row.sets_favor}</td>
+              <td>${row.sets_contra}</td>
+              <td><strong>${row.pontos}</strong></td>
+            </tr>
+          `).join('')}
+        </tbody>
+      </table>
+      <button class="btn-primary" onclick="goToCalendar()" style="margin-top: 30px;">← Voltar ao Calendário</button>
+    `
+
+    container.innerHTML = html
+  } catch (error) {
+    console.error('❌ Erro ao carregar classificação:', error.message)
+    document.getElementById('standingsContainer').innerHTML = `<p class="loading">❌ Erro: ${error.message}</p>`
   }
 }
 
