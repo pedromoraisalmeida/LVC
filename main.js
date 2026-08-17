@@ -194,6 +194,14 @@ async function showCalendar(teamId) {
   const team = userTeams.find(t => t.team_id === teamId)
   if (team) {
     document.getElementById('teamName').textContent = team.team.name
+
+    // Mostrar botão de gerenciar eventos apenas para treinadores, coordenadores e super_admin
+    const manageBtn = document.getElementById('manageEventsBtn')
+    if (manageBtn && ['treinador', 'coordenador', 'super_admin'].includes(team.role)) {
+      manageBtn.style.display = 'block'
+    } else if (manageBtn) {
+      manageBtn.style.display = 'none'
+    }
   }
 
   // Carregar eventos
@@ -1554,6 +1562,239 @@ async function saveUserTeams(event, userId) {
     alert(`Erro: ${error.message}`)
   }
 }
+
+// ============= GERENCIAR EVENTOS =============
+
+let editingEventId = null
+
+// Mostrar screen de gestão de eventos
+async function showEventManagement() {
+  document.getElementById('loginScreen').style.display = 'none'
+  document.getElementById('dashboardScreen').style.display = 'none'
+  document.getElementById('calendarScreen').style.display = 'none'
+  document.getElementById('eventDetailsScreen').style.display = 'none'
+  document.getElementById('attendanceScreen').style.display = 'none'
+  document.getElementById('standingsScreen').style.display = 'none'
+  document.getElementById('chatScreen').style.display = 'none'
+  document.getElementById('dmsScreen').style.display = 'none'
+  document.getElementById('managementScreen').style.display = 'none'
+  document.getElementById('eventsManagementScreen').style.display = 'flex'
+
+  await loadEventsList()
+}
+
+// Carregar lista de eventos da equipa
+async function loadEventsList() {
+  try {
+    if (!selectedTeam) {
+      alert('❌ Nenhuma equipa selecionada')
+      return
+    }
+
+    const { data, error } = await supabaseClient
+      .from('events')
+      .select('*')
+      .eq('team_id', selectedTeam)
+      .order('data', { ascending: true })
+
+    if (error) throw error
+
+    const container = document.getElementById('eventsListContainer')
+
+    if (!data || data.length === 0) {
+      container.innerHTML = '<p class="loading">Nenhum evento criado. <a href="#" onclick="showCreateEventForm(event)">Criar um!</a></p>'
+      return
+    }
+
+    let html = ''
+    data.forEach(event => {
+      const eventDate = new Date(event.data)
+      const formattedDate = eventDate.toLocaleDateString('pt-PT')
+      const formattedTime = event.hora || '??:??'
+
+      html += `
+        <div class="event-item ${event.tipo}">
+          <div class="event-info">
+            <div class="event-title">
+              <span class="event-type-badge ${event.tipo}">${event.tipo === 'jogo' ? '⚽ JOGO' : '🏐 TREINO'}</span>
+              ${event.titulo}
+            </div>
+            <div class="event-meta">📅 ${formattedDate} às ${formattedTime}</div>
+            <div class="event-meta">📍 ${event.local || 'Local não especificado'}</div>
+            ${event.adversario ? `<div class="event-meta">⚔️ vs ${event.adversario}</div>` : ''}
+            ${event.descricao ? `<div class="event-meta">📝 ${event.descricao}</div>` : ''}
+          </div>
+          <div class="event-actions">
+            <button class="btn-edit" onclick="editEvent('${event.id}')">Editar</button>
+            <button class="btn-delete" onclick="deleteEvent('${event.id}')">Apagar</button>
+          </div>
+        </div>
+      `
+    })
+
+    container.innerHTML = html
+  } catch (error) {
+    console.error('❌ Erro ao carregar eventos:', error)
+    alert(`Erro: ${error.message}`)
+  }
+}
+
+// Mostrar formulário de criar evento
+window.showCreateEventForm = function(e) {
+  if (e) e.preventDefault()
+
+  editingEventId = null
+  document.getElementById('eventFormTitle').textContent = 'Novo Evento'
+  document.getElementById('eventTitle').value = ''
+  document.getElementById('eventType').value = ''
+  document.getElementById('eventDate').value = ''
+  document.getElementById('eventTime').value = ''
+  document.getElementById('eventLocation').value = ''
+  document.getElementById('eventDescription').value = ''
+  document.getElementById('eventOpponent').value = ''
+  document.getElementById('eventOpponentGroup').style.display = 'none'
+  document.getElementById('eventFormContainer').style.display = 'flex'
+}
+
+// Editar evento
+async function editEvent(eventId) {
+  try {
+    const { data, error } = await supabaseClient
+      .from('events')
+      .select('*')
+      .eq('id', eventId)
+
+    if (error) throw error
+    if (!data || data.length === 0) {
+      alert('❌ Evento não encontrado')
+      return
+    }
+
+    const event = data[0]
+    editingEventId = eventId
+
+    // Preencher formulário
+    document.getElementById('eventFormTitle').textContent = 'Editar Evento'
+    document.getElementById('eventTitle').value = event.titulo
+    document.getElementById('eventType').value = event.tipo
+    document.getElementById('eventDate').value = event.data
+    document.getElementById('eventTime').value = event.hora
+    document.getElementById('eventLocation').value = event.local || ''
+    document.getElementById('eventDescription').value = event.descricao || ''
+    document.getElementById('eventOpponent').value = event.adversario || ''
+
+    // Mostrar/esconder campo adversário
+    if (event.tipo === 'jogo') {
+      document.getElementById('eventOpponentGroup').style.display = 'block'
+    } else {
+      document.getElementById('eventOpponentGroup').style.display = 'none'
+    }
+
+    document.getElementById('eventFormContainer').style.display = 'flex'
+  } catch (error) {
+    console.error('❌ Erro ao editar evento:', error)
+    alert(`Erro: ${error.message}`)
+  }
+}
+
+// Fechar formulário
+window.closeEventForm = function() {
+  document.getElementById('eventFormContainer').style.display = 'none'
+  editingEventId = null
+}
+
+// Guardar evento (criar ou editar)
+async function saveEvent(event) {
+  event.preventDefault()
+
+  try {
+    if (!selectedTeam) {
+      alert('❌ Nenhuma equipa selecionada')
+      return
+    }
+
+    const eventData = {
+      titulo: document.getElementById('eventTitle').value,
+      tipo: document.getElementById('eventType').value,
+      data: document.getElementById('eventDate').value,
+      hora: document.getElementById('eventTime').value,
+      local: document.getElementById('eventLocation').value,
+      descricao: document.getElementById('eventDescription').value,
+      adversario: document.getElementById('eventOpponent').value,
+      team_id: selectedTeam
+    }
+
+    console.log('Guardando evento:', eventData)
+
+    let result
+
+    if (editingEventId) {
+      // Editar evento existente
+      const { error } = await supabaseClient
+        .from('events')
+        .update(eventData)
+        .eq('id', editingEventId)
+
+      if (error) throw error
+      console.log('Evento atualizado com sucesso')
+    } else {
+      // Criar novo evento
+      const { error } = await supabaseClient
+        .from('events')
+        .insert([eventData])
+
+      if (error) throw error
+      console.log('Evento criado com sucesso')
+    }
+
+    closeEventForm()
+    await loadEventsList()
+    alert('✅ Evento guardado!')
+  } catch (error) {
+    console.error('❌ Erro ao guardar evento:', error)
+    alert(`Erro: ${error.message}`)
+  }
+}
+
+// Apagar evento
+async function deleteEvent(eventId) {
+  if (!confirm('Tem a certeza que quer apagar este evento?')) {
+    return
+  }
+
+  try {
+    console.log('Apagando evento:', eventId)
+
+    const { error } = await supabaseClient
+      .from('events')
+      .delete()
+      .eq('id', eventId)
+
+    if (error) throw error
+
+    console.log('Evento apagado com sucesso')
+    await loadEventsList()
+    alert('✅ Evento apagado!')
+  } catch (error) {
+    console.error('❌ Erro ao apagar evento:', error)
+    alert(`Erro: ${error.message}`)
+  }
+}
+
+// Listener para mostrar/esconder campo de adversário
+document.addEventListener('DOMContentLoaded', () => {
+  const eventTypeSelect = document.getElementById('eventType')
+  if (eventTypeSelect) {
+    eventTypeSelect.addEventListener('change', () => {
+      const opponentGroup = document.getElementById('eventOpponentGroup')
+      if (eventTypeSelect.value === 'jogo') {
+        opponentGroup.style.display = 'block'
+      } else {
+        opponentGroup.style.display = 'none'
+      }
+    })
+  }
+})
 
 // ============= INICIALIZAÇÃO =============
 // Inicializa a app quando a página carrega

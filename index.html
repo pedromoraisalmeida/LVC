@@ -71,7 +71,7 @@
       <div class="header">
         <button onclick="goToDashboard()" class="btn-back">← Voltar</button>
         <h1 id="teamName"></h1>
-        <div></div>
+        <button id="manageEventsBtn" class="btn-primary" onclick="showEventManagement()" style="margin: 0;">⚙️ Gerenciar</button>
       </div>
 
       <div class="content">
@@ -207,6 +207,80 @@
       <div class="content">
         <div id="usersListContainer" class="users-table">
           <p class="loading">Carregando utilizadores...</p>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- SCREEN 10: GESTÃO DE EVENTOS -->
+  <div id="eventsManagementScreen" class="screen" style="display: none;">
+    <div class="container">
+      <div class="header">
+        <button onclick="goToCalendar()" class="btn-back">← Voltar</button>
+        <h1>📅 Gerenciar Eventos</h1>
+        <button class="btn-primary" onclick="showCreateEventForm()" style="margin: 0;">➕ Novo Evento</button>
+      </div>
+
+      <div class="content">
+        <!-- Lista de eventos -->
+        <div id="eventsListContainer" class="events-management-list">
+          <p class="loading">Carregando eventos...</p>
+        </div>
+
+        <!-- Formulário criar/editar evento -->
+        <div id="eventFormContainer" class="event-form-modal" style="display: none;">
+          <div class="modal-content">
+            <button onclick="closeEventForm()" class="btn-close">✕</button>
+            <h2 id="eventFormTitle">Novo Evento</h2>
+
+            <form onsubmit="saveEvent(event)">
+              <div class="form-group">
+                <label for="eventTitle">Título do Evento</label>
+                <input type="text" id="eventTitle" required placeholder="ex: Treino">
+              </div>
+
+              <div class="form-row">
+                <div class="form-group">
+                  <label for="eventType">Tipo</label>
+                  <select id="eventType" required>
+                    <option value="">Escolhe tipo</option>
+                    <option value="treino">Treino</option>
+                    <option value="jogo">Jogo</option>
+                  </select>
+                </div>
+
+                <div class="form-group">
+                  <label for="eventDate">Data</label>
+                  <input type="date" id="eventDate" required>
+                </div>
+
+                <div class="form-group">
+                  <label for="eventTime">Hora</label>
+                  <input type="time" id="eventTime" required>
+                </div>
+              </div>
+
+              <div class="form-group">
+                <label for="eventLocation">Local (Pavilhão)</label>
+                <input type="text" id="eventLocation" placeholder="ex: Pavilhão Principal">
+              </div>
+
+              <div class="form-group">
+                <label for="eventDescription">Descrição</label>
+                <textarea id="eventDescription" placeholder="Notas adicionais..." rows="3"></textarea>
+              </div>
+
+              <div class="form-group" id="eventOpponentGroup" style="display: none;">
+                <label for="eventOpponent">Adversário (para jogos)</label>
+                <input type="text" id="eventOpponent" placeholder="Nome do adversário">
+              </div>
+
+              <div class="form-actions">
+                <button type="submit" class="btn-primary">Guardar Evento</button>
+                <button type="button" onclick="closeEventForm()" class="btn-secondary">Cancelar</button>
+              </div>
+            </form>
+          </div>
         </div>
       </div>
     </div>
