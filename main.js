@@ -1237,7 +1237,10 @@ async function loadUsersList() {
       if (!userTeamsMap[ut.user_id]) {
         userTeamsMap[ut.user_id] = []
       }
-      userTeamsMap[ut.user_id].push(ut.teams.name)
+      // Verificar se teams existe antes de ler name
+      if (ut.teams && ut.teams.name) {
+        userTeamsMap[ut.user_id].push(ut.teams.name)
+      }
     })
 
     const html = `
