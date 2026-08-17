@@ -1212,17 +1212,33 @@ async function loadUsersList() {
     const container = document.getElementById('usersListContainer')
     container.innerHTML = '<p class="loading">Carregando utilizadores...</p>'
 
-    const { data, error } = await supabaseClient
+    const { data: users, error: usersError } = await supabaseClient
       .from('users')
       .select('id, email, role, nome')
       .order('email', { ascending: true })
 
-    if (error) throw error
+    if (usersError) throw usersError
 
-    if (data.length === 0) {
+    // Carregar equipas de cada utilizador
+    const { data: teamData, error: teamError } = await supabaseClient
+      .from('user_teams')
+      .select('user_id, team_id, role, teams(name)')
+
+    if (teamError) throw teamError
+
+    if (users.length === 0) {
       container.innerHTML = '<p class="loading">Nenhum utilizador</p>'
       return
     }
+
+    // Agrupar equipas por utilizador
+    const userTeamsMap = {}
+    teamData.forEach(ut => {
+      if (!userTeamsMap[ut.user_id]) {
+        userTeamsMap[ut.user_id] = []
+      }
+      userTeamsMap[ut.user_id].push(ut.teams.name)
+    })
 
     const html = `
       <table>
@@ -1231,11 +1247,12 @@ async function loadUsersList() {
             <th>Username</th>
             <th>Nome</th>
             <th>Papel</th>
+            <th>Equipas</th>
             <th>Ações</th>
           </tr>
         </thead>
         <tbody>
-          ${data.map(user => `
+          ${users.map(user => `
             <tr>
               <td><strong>${user.email}</strong></td>
               <td>${user.nome || '-'}</td>
@@ -1247,9 +1264,11 @@ async function loadUsersList() {
                     user.role === 'jogador' ? '⚽ Jogador' : user.role}
                 </span>
               </td>
+              <td>${(userTeamsMap[user.id] || []).join(', ') || '-'}</td>
               <td>
                 <div class="user-actions">
-                  <button class="btn-edit" onclick="editUser('${user.id}')">Editar</button>
+                  <button class="btn-edit" onclick="editUserTeams('${user.id}', '${user.email}')">Equipas</button>
+                  <button class="btn-edit" onclick="editUser('${user.id}')">Papel</button>
                   <button class="btn-delete" onclick="deleteUser('${user.id}')">Remover</button>
                 </div>
               </td>
@@ -1388,6 +1407,97 @@ async function deleteUser(userId) {
     if (error) throw error
 
     alert('✅ Utilizador removido!')
+    await loadUsersList()
+  } catch (error) {
+    console.error('❌ Erro:', error.message)
+    alert(`Erro: ${error.message}`)
+  }
+}
+
+// Editar equipas do utilizador
+async function editUserTeams(userId, userEmail) {
+  try {
+    const container = document.getElementById('usersListContainer')
+
+    // Carregar todas as equipas
+    const { data: teams, error: teamsError } = await supabaseClient
+      .from('teams')
+      .select('id, name')
+      .order('name', { ascending: true })
+
+    if (teamsError) throw teamsError
+
+    // Carregar equipas do utilizador
+    const { data: userTeams, error: userTeamsError } = await supabaseClient
+      .from('user_teams')
+      .select('team_id, role')
+      .eq('user_id', userId)
+
+    if (userTeamsError) throw userTeamsError
+
+    const userTeamIds = userTeams.map(ut => ut.team_id)
+
+    const html = `
+      <div class="create-user-form">
+        <h2>Associar Equipas - ${userEmail}</h2>
+        <form onsubmit="saveUserTeams(event, '${userId}')">
+          <div id="teamsCheckboxes">
+            ${teams.map(team => `
+              <div style="margin-bottom: 12px;">
+                <label style="display: flex; align-items: center; cursor: pointer;">
+                  <input type="checkbox" name="team_${team.id}" value="${team.id}"
+                    ${userTeamIds.includes(team.id) ? 'checked' : ''}
+                    style="margin-right: 10px;">
+                  <span>${team.name}</span>
+                </label>
+              </div>
+            `).join('')}
+          </div>
+
+          <button type="submit" class="btn-primary" style="width: 100%;">Guardar Equipas</button>
+          <button type="button" class="btn-primary" style="width: 100%; background: var(--text-light); margin-top: 10px;" onclick="loadUsersList()">Cancelar</button>
+        </form>
+      </div>
+    `
+
+    container.innerHTML = html
+  } catch (error) {
+    console.error('❌ Erro:', error.message)
+    alert(`Erro: ${error.message}`)
+  }
+}
+
+// Guardar equipas do utilizador
+async function saveUserTeams(event, userId) {
+  event.preventDefault()
+
+  try {
+    const form = event.target
+    const selectedTeams = Array.from(form.querySelectorAll('input[type="checkbox"]:checked'))
+      .map(cb => cb.value)
+
+    // Remover associações antigas
+    await supabaseClient
+      .from('user_teams')
+      .delete()
+      .eq('user_id', userId)
+
+    // Adicionar novas associações
+    if (selectedTeams.length > 0) {
+      const newAssociations = selectedTeams.map(teamId => ({
+        user_id: userId,
+        team_id: teamId,
+        role: 'jogador' // Default role
+      }))
+
+      const { error } = await supabaseClient
+        .from('user_teams')
+        .insert(newAssociations)
+
+      if (error) throw error
+    }
+
+    alert('✅ Equipas atualizadas!')
     await loadUsersList()
   } catch (error) {
     console.error('❌ Erro:', error.message)
