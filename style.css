@@ -232,7 +232,11 @@ h3 {
 /* DASHBOARD & CALENDAR SCREENS */
 
 #dashboardScreen,
-#calendarScreen {
+#calendarScreen,
+#eventDetailsScreen,
+#attendanceScreen,
+#standingsScreen,
+#chatScreen {
   background: var(--light-gray);
   padding-top: 80px;
 }
