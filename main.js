@@ -1140,6 +1140,7 @@ async function sendDM(event) {
         autor_id: currentUser.id,
         destinatario_id: destinatarioId,
         conteudo,
+        tipo: 'equipa',
         tipo_mensagem: 'privada',
         criado_em: new Date()
       }])
