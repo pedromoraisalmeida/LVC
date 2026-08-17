@@ -651,9 +651,10 @@ async function updateAttendance(eventId, userId, status) {
       .select('id')
       .eq('event_id', eventId)
       .eq('user_id', userId)
-      .single()
 
-    if (existingData) {
+    if (checkError) throw checkError
+
+    if (existingData && existingData.length > 0) {
       // Update existing record
       const { error: updateError } = await supabaseClient
         .from('attendances')
