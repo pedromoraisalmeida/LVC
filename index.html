@@ -286,6 +286,84 @@
     </div>
   </div>
 
+  <!-- SCREEN 11: RELATÓRIO DE ASSIDUIDADE -->
+  <div id="attendanceReportScreen" class="screen" style="display: none;">
+    <div class="container">
+      <div class="header">
+        <button onclick="goToDashboard()" class="btn-back">← Voltar</button>
+        <h1>📊 Relatório de Assiduidade</h1>
+        <button class="btn-primary" onclick="exportToExcel()" style="margin: 0;">📥 Exportar</button>
+      </div>
+
+      <div class="content">
+        <!-- FILTROS -->
+        <div class="report-filters">
+          <div class="filter-group">
+            <label for="reportTeam">Equipa:</label>
+            <select id="reportTeam" onchange="loadAttendanceReport()">
+              <option value="">Escolhe equipa...</option>
+            </select>
+          </div>
+
+          <div class="filter-group">
+            <label for="reportPeriod">Período:</label>
+            <select id="reportPeriod" onchange="loadAttendanceReport()">
+              <option value="semana">Última Semana</option>
+              <option value="mes" selected>Mês Atual</option>
+              <option value="trimestre">Trimestre</option>
+              <option value="ano">Ano</option>
+            </select>
+          </div>
+
+          <button class="btn-secondary" onclick="loadAttendanceReport()">🔄 Atualizar</button>
+        </div>
+
+        <!-- KPI CARDS -->
+        <div class="kpi-cards">
+          <div class="kpi-card">
+            <div class="kpi-label">Média de Assiduidade</div>
+            <div class="kpi-value" id="kpiAverage">-</div>
+            <div class="kpi-unit">%</div>
+          </div>
+
+          <div class="kpi-card">
+            <div class="kpi-label">Total Presenças</div>
+            <div class="kpi-value" id="kpiPresent">-</div>
+            <div class="kpi-unit">✅</div>
+          </div>
+
+          <div class="kpi-card">
+            <div class="kpi-label">Total Faltas</div>
+            <div class="kpi-value" id="kpiAbsent">-</div>
+            <div class="kpi-unit">❌</div>
+          </div>
+
+          <div class="kpi-card">
+            <div class="kpi-label">Justificadas</div>
+            <div class="kpi-value" id="kpiJustified">-</div>
+            <div class="kpi-unit">📝</div>
+          </div>
+        </div>
+
+        <!-- GRÁFICO -->
+        <div class="chart-container">
+          <h3>Assiduidade por Jogador</h3>
+          <div id="chartContainer" class="attendance-chart">
+            <p class="loading">Carregando gráfico...</p>
+          </div>
+        </div>
+
+        <!-- TABELA -->
+        <div class="table-container">
+          <h3>Detalhes por Jogador</h3>
+          <div id="attendanceTableContainer" class="attendance-table">
+            <p class="loading">Carregando dados...</p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
   <script src="env.js"></script>
   <script src="main.js"></script>
 </body>
