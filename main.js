@@ -1996,21 +1996,26 @@ function renderChart() {
     console.log('Players chart data:', sorted)
 
     // Renderizar barras
-    let html = ''
-    sorted.forEach(player => {
+    let html = '<div class="chart-bars-wrapper">'
+    sorted.forEach((player, index) => {
       const fillClass = player.percentage >= 80 ? 'high' : player.percentage >= 60 ? 'medium' : 'low'
+      const delay = index * 50 // Animação em cascata
 
       html += `
-        <div class="chart-bar">
-          <div class="chart-bar-label">${player.name}</div>
+        <div class="chart-bar" style="animation-delay: ${delay}ms;">
+          <div class="chart-bar-label">
+            <span class="player-name">${player.name}</span>
+            <span class="player-stats">${player.present}✅ ${player.absent}❌ ${player.justified}📝</span>
+          </div>
           <div class="chart-bar-container">
-            <div class="chart-bar-fill ${fillClass}" style="width: ${player.percentage}%">
+            <div class="chart-bar-fill ${fillClass}" style="width: ${player.percentage}%; animation-delay: ${delay}ms;">
               <span class="chart-bar-value">${player.percentage}%</span>
             </div>
           </div>
         </div>
       `
     })
+    html += '</div>'
 
     document.getElementById('chartContainer').innerHTML = html || '<p class="loading">Sem dados</p>'
 
