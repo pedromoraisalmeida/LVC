@@ -1822,6 +1822,287 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 })
 
+// ============= RELATÓRIO DE ASSIDUIDADE =============
+
+let reportData = {
+  attendances: [],
+  teamId: null,
+  period: 'mes'
+}
+
+// Mostrar screen de relatório
+async function showAttendanceReport() {
+  showScreen('attendanceReportScreen')
+
+  // Preencher dropdown de equipas
+  const teamSelect = document.getElementById('reportTeam')
+  teamSelect.innerHTML = '<option value="">Escolhe equipa...</option>'
+
+  userTeams.forEach(ut => {
+    const option = document.createElement('option')
+    option.value = ut.team_id
+    option.textContent = ut.team.name
+    teamSelect.appendChild(option)
+  })
+
+  // Se há apenas uma equipa, selecionar automaticamente
+  if (userTeams.length === 1) {
+    teamSelect.value = userTeams[0].team_id
+  }
+}
+
+// Carregar dados de assiduidade
+async function loadAttendanceReport() {
+  try {
+    const teamId = document.getElementById('reportTeam').value
+    const period = document.getElementById('reportPeriod').value
+
+    if (!teamId) {
+      alert('❌ Seleciona uma equipa!')
+      return
+    }
+
+    console.log(`Carregando assiduidade para equipa ${teamId}, período: ${period}`)
+
+    reportData.teamId = teamId
+    reportData.period = period
+
+    // Calcular datas do período
+    const dates = calculatePeriodDates(period)
+    console.log('Período:', dates)
+
+    // Buscar dados de assiduidade
+    const { data, error } = await supabaseClient
+      .from('attendances')
+      .select(`
+        id,
+        user_id,
+        event_id,
+        status,
+        justification_id,
+        users:user_id (id, nome),
+        events:event_id (id, data, tipo, titulo),
+        justifications:justification_id (id, tipo, descricao)
+      `)
+      .eq('events.team_id', teamId)
+      .gte('events.data', dates.start)
+      .lte('events.data', dates.end)
+      .order('events.data', { ascending: false })
+
+    if (error) throw error
+
+    console.log('Dados de assiduidade:', data)
+    reportData.attendances = data || []
+
+    // Calcular estatísticas e renderizar
+    calculateStats()
+    renderChart()
+    renderTable()
+
+  } catch (error) {
+    console.error('❌ Erro ao carregar assiduidade:', error)
+    alert(`Erro: ${error.message}`)
+  }
+}
+
+// Calcular datas do período
+function calculatePeriodDates(period) {
+  const today = new Date()
+  let start = new Date()
+
+  switch(period) {
+    case 'semana':
+      start.setDate(today.getDate() - 7)
+      break
+    case 'mes':
+      start.setMonth(today.getMonth() - 1)
+      break
+    case 'trimestre':
+      start.setMonth(today.getMonth() - 3)
+      break
+    case 'ano':
+      start.setFullYear(today.getFullYear() - 1)
+      break
+  }
+
+  return {
+    start: start.toISOString().split('T')[0],
+    end: today.toISOString().split('T')[0]
+  }
+}
+
+// Calcular estatísticas
+function calculateStats() {
+  try {
+    if (!reportData.attendances || reportData.attendances.length === 0) {
+      document.getElementById('kpiAverage').textContent = '0'
+      document.getElementById('kpiPresent').textContent = '0'
+      document.getElementById('kpiAbsent').textContent = '0'
+      document.getElementById('kpiJustified').textContent = '0'
+      return
+    }
+
+    const present = reportData.attendances.filter(a => a.status === 'confirmado').length
+    const absent = reportData.attendances.filter(a => a.status === 'falta').length
+    const justified = reportData.attendances.filter(a => a.status === 'justificado').length
+    const total = reportData.attendances.length
+    const average = total > 0 ? Math.round((present / total) * 100) : 0
+
+    console.log(`Stats: ${present}/${total} presentes, ${absent} faltas, ${justified} justificadas`)
+
+    document.getElementById('kpiAverage').textContent = average
+    document.getElementById('kpiPresent').textContent = present
+    document.getElementById('kpiAbsent').textContent = absent
+    document.getElementById('kpiJustified').textContent = justified
+
+  } catch (error) {
+    console.error('Erro ao calcular stats:', error)
+  }
+}
+
+// Renderizar gráfico de barras
+function renderChart() {
+  try {
+    if (!reportData.attendances || reportData.attendances.length === 0) {
+      document.getElementById('chartContainer').innerHTML = '<p class="loading">Sem dados para este período</p>'
+      return
+    }
+
+    // Agrupar por jogador
+    const playerStats = {}
+
+    reportData.attendances.forEach(att => {
+      const playerName = att.users?.nome || 'Desconhecido'
+
+      if (!playerStats[playerName]) {
+        playerStats[playerName] = { present: 0, absent: 0, justified: 0, total: 0 }
+      }
+
+      if (att.status === 'confirmado') playerStats[playerName].present++
+      else if (att.status === 'falta') playerStats[playerName].absent++
+      else if (att.status === 'justificado') playerStats[playerName].justified++
+
+      playerStats[playerName].total++
+    })
+
+    // Ordenar por percentagem (decrescente)
+    const sorted = Object.entries(playerStats)
+      .map(([name, stats]) => ({
+        name,
+        percentage: Math.round((stats.present / stats.total) * 100),
+        ...stats
+      }))
+      .sort((a, b) => b.percentage - a.percentage)
+
+    console.log('Players chart data:', sorted)
+
+    // Renderizar barras
+    let html = ''
+    sorted.forEach(player => {
+      const fillClass = player.percentage >= 80 ? 'high' : player.percentage >= 60 ? 'medium' : 'low'
+
+      html += `
+        <div class="chart-bar">
+          <div class="chart-bar-label">${player.name}</div>
+          <div class="chart-bar-container">
+            <div class="chart-bar-fill ${fillClass}" style="width: ${player.percentage}%">
+              <span class="chart-bar-value">${player.percentage}%</span>
+            </div>
+          </div>
+        </div>
+      `
+    })
+
+    document.getElementById('chartContainer').innerHTML = html || '<p class="loading">Sem dados</p>'
+
+  } catch (error) {
+    console.error('Erro ao renderizar gráfico:', error)
+  }
+}
+
+// Renderizar tabela
+function renderTable() {
+  try {
+    if (!reportData.attendances || reportData.attendances.length === 0) {
+      document.getElementById('attendanceTableContainer').innerHTML = '<p class="loading">Sem dados para este período</p>'
+      return
+    }
+
+    // Agrupar por jogador
+    const playerStats = {}
+
+    reportData.attendances.forEach(att => {
+      const playerName = att.users?.nome || 'Desconhecido'
+
+      if (!playerStats[playerName]) {
+        playerStats[playerName] = { present: 0, absent: 0, justified: 0, total: 0, lastEvent: null }
+      }
+
+      if (att.status === 'confirmado') playerStats[playerName].present++
+      else if (att.status === 'falta') playerStats[playerName].absent++
+      else if (att.status === 'justificado') playerStats[playerName].justified++
+
+      playerStats[playerName].total++
+      if (!playerStats[playerName].lastEvent) {
+        playerStats[playerName].lastEvent = att.events?.tipo || 'N/A'
+      }
+    })
+
+    // Converter para array e ordenar
+    const sorted = Object.entries(playerStats)
+      .map(([name, stats]) => ({
+        name,
+        percentage: Math.round((stats.present / stats.total) * 100),
+        ...stats
+      }))
+      .sort((a, b) => b.percentage - a.percentage)
+
+    // Renderizar tabela
+    let html = `
+      <table>
+        <thead>
+          <tr>
+            <th>Jogador</th>
+            <th>Assiduidade</th>
+            <th>Presenças</th>
+            <th>Faltas</th>
+            <th>Justificadas</th>
+            <th>Último Evento</th>
+          </tr>
+        </thead>
+        <tbody>
+    `
+
+    sorted.forEach(player => {
+      html += `
+        <tr>
+          <td data-label="Jogador">${player.name}</td>
+          <td data-label="Assiduidade"><span class="attendance-percentage">${player.percentage}%</span></td>
+          <td data-label="Presenças"><span class="attendance-status-badge present">✅ ${player.present}</span></td>
+          <td data-label="Faltas"><span class="attendance-status-badge absent">❌ ${player.absent}</span></td>
+          <td data-label="Justificadas"><span class="attendance-status-badge justified">📝 ${player.justified}</span></td>
+          <td data-label="Último Evento">${player.lastEvent}</td>
+        </tr>
+      `
+    })
+
+    html += `
+        </tbody>
+      </table>
+    `
+
+    document.getElementById('attendanceTableContainer').innerHTML = html
+
+  } catch (error) {
+    console.error('Erro ao renderizar tabela:', error)
+  }
+}
+
+// Exportar para Excel (placeholder por agora)
+window.exportToExcel = function() {
+  alert('📥 Exportação para Excel - Em desenvolvimento!')
+}
+
 // ============= INICIALIZAÇÃO =============
 // Inicializa a app quando a página carrega
 window.addEventListener('DOMContentLoaded', initApp)
