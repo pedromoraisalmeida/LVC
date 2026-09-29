@@ -303,6 +303,49 @@ h3 {
   margin-top: 80px;
 }
 
+/* DASHBOARD ACTIONS */
+.dashboard-actions {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+  gap: 15px;
+  margin-bottom: 40px;
+}
+
+.action-btn {
+  background: linear-gradient(135deg, var(--primary-blue), var(--primary-dark));
+  color: var(--white);
+  border: none;
+  border-radius: 12px;
+  padding: 20px;
+  cursor: pointer;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+  transition: all 0.3s ease;
+  box-shadow: 0 4px 12px rgba(42, 92, 160, 0.2);
+  min-height: 120px;
+  justify-content: center;
+}
+
+.action-btn:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 8px 20px rgba(42, 92, 160, 0.3);
+  background: linear-gradient(135deg, var(--primary-dark), #1a3a52);
+}
+
+.action-icon {
+  font-size: 32px;
+  line-height: 1;
+}
+
+.action-label {
+  font-size: 14px;
+  font-weight: 600;
+  text-align: center;
+  line-height: 1.2;
+}
+
 /* TEAMS GRID */
 .teams-grid {
   display: grid;
