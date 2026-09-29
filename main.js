@@ -1881,7 +1881,7 @@ async function loadAttendanceReport() {
         status,
         justification_id,
         users:user_id (id, nome),
-        events:event_id (id, data, tipo, titulo, team_id),
+        events:event_id (id, data, tipo, team_id),
         justifications:justification_id (id, tipo, descricao)
       `)
       .eq('events.team_id', teamId)
