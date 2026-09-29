@@ -1881,13 +1881,12 @@ async function loadAttendanceReport() {
         status,
         justification_id,
         users:user_id (id, nome),
-        events:event_id (id, data, tipo, titulo),
+        events:event_id (id, data, tipo, titulo, team_id),
         justifications:justification_id (id, tipo, descricao)
       `)
       .eq('events.team_id', teamId)
       .gte('events.data', dates.start)
       .lte('events.data', dates.end)
-      .order('events.data', { ascending: false })
 
     if (error) throw error
 
