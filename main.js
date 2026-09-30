@@ -142,11 +142,12 @@ window.handleLogout = async function() {
 
 // Mostrar tela de login
 function showLoginScreen() {
-  document.getElementById('loginScreen').style.display = 'flex'
-  document.getElementById('mainScreen').style.display = 'none'
+  showScreen('loginScreen')
   isSignUp = false
-  document.getElementById('authForm').reset()
-  document.getElementById('authBtn').textContent = 'Entrar'
+  const authForm = document.getElementById('authForm')
+  if (authForm) authForm.reset()
+  const authBtn = document.getElementById('authBtn')
+  if (authBtn) authBtn.textContent = 'Entrar'
 }
 
 // ============= NAVEGAÇÃO =============
