@@ -196,11 +196,9 @@ async function showCalendar(teamId) {
   if (team) {
     document.getElementById('teamName').textContent = team.team.name
 
-    // Mostrar botão de gerenciar eventos apenas para treinadores, coordenadores e super_admin
+    // TODO: Mostrar botão de gerenciar eventos quando necessário
     const manageBtn = document.getElementById('manageEventsBtn')
-    if (manageBtn && ['treinador', 'coordenador', 'super_admin'].includes(team.role)) {
-      manageBtn.style.display = 'block'
-    } else if (manageBtn) {
+    if (manageBtn) {
       manageBtn.style.display = 'none'
     }
   }
@@ -208,38 +206,7 @@ async function showCalendar(teamId) {
   // Carregar eventos
   await loadTeamEvents(teamId)
 
-  // Adicionar botões de ação se não existirem
-  const header = document.querySelector('#calendarScreen .header')
-
-  if (!document.getElementById('dmsBtn')) {
-    const dmsBtn = document.createElement('button')
-    dmsBtn.id = 'dmsBtn'
-    dmsBtn.className = 'btn-primary'
-    dmsBtn.textContent = '✉️ DMs'
-    dmsBtn.style.margin = '0 10px 0 0'
-    dmsBtn.onclick = () => showDMs()
-    header.appendChild(dmsBtn)
-  }
-
-  if (!document.getElementById('chatBtn')) {
-    const chatBtn = document.createElement('button')
-    chatBtn.id = 'chatBtn'
-    chatBtn.className = 'btn-primary'
-    chatBtn.textContent = '💬 Chat'
-    chatBtn.style.margin = '0 10px 0 0'
-    chatBtn.onclick = () => showChat()
-    header.appendChild(chatBtn)
-  }
-
-  if (!document.getElementById('standingsBtn')) {
-    const standingsBtn = document.createElement('button')
-    standingsBtn.id = 'standingsBtn'
-    standingsBtn.className = 'btn-primary'
-    standingsBtn.textContent = '📊 Classificação'
-    standingsBtn.style.margin = '0'
-    standingsBtn.onclick = () => showStandings()
-    header.appendChild(standingsBtn)
-  }
+  // TODO: Adicionar botões de ação (DMs, Chat, Classificação) quando necessário
 }
 
 // Voltar ao Dashboard
@@ -1835,6 +1802,8 @@ async function showAttendanceReport() {
   // Se há apenas uma equipa, selecionar automaticamente
   if (userTeams.length === 1) {
     teamSelect.value = userTeams[0].team_id
+    // Carregar dados automaticamente
+    await loadAttendanceReport()
   }
 }
 
