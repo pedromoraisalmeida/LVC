@@ -22,6 +22,11 @@ body {
   background: var(--light-gray);
   color: var(--text-dark);
   line-height: 1.6;
+  overscroll-behavior: none; /* Desabilitar pull-to-refresh */
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  padding-top: env(safe-area-inset-top); /* Respeitar notch/safe areas */
 }
 
 .container {
@@ -1543,6 +1548,35 @@ tbody tr:first-child {
 }
 
 @media (max-width: 480px) {
+  body {
+    padding-top: env(safe-area-inset-top);
+  }
+
+  .dashboard-actions {
+    grid-template-columns: 1fr;
+    gap: 10px;
+    margin-bottom: 20px;
+  }
+
+  .action-btn {
+    padding: 15px;
+    min-height: 80px;
+  }
+
+  .action-icon {
+    font-size: 28px;
+  }
+
+  .teams-grid {
+    grid-template-columns: 1fr;
+    gap: 12px;
+    margin-bottom: 20px;
+  }
+
+  .team-card {
+    padding: 15px;
+  }
+
   .kpi-cards {
     grid-template-columns: 1fr;
     gap: 12px;
