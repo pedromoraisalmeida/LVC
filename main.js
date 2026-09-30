@@ -157,6 +157,14 @@ async function showDashboard() {
   document.getElementById('loginScreen').style.display = 'none'
   document.getElementById('dashboardScreen').style.display = 'flex'
   document.getElementById('calendarScreen').style.display = 'none'
+  document.getElementById('eventDetailsScreen').style.display = 'none'
+  document.getElementById('attendanceScreen').style.display = 'none'
+  document.getElementById('standingsScreen').style.display = 'none'
+  document.getElementById('chatScreen').style.display = 'none'
+  document.getElementById('dmsScreen').style.display = 'none'
+  document.getElementById('managementScreen').style.display = 'none'
+  document.getElementById('eventsManagementScreen').style.display = 'none'
+  document.getElementById('attendanceReportScreen').style.display = 'none'
 
   if (currentUser) {
     document.getElementById('userEmail').textContent = currentUser.email
