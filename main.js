@@ -154,17 +154,7 @@ function showLoginScreen() {
 
 // Mostrar Dashboard
 async function showDashboard() {
-  document.getElementById('loginScreen').style.display = 'none'
-  document.getElementById('dashboardScreen').style.display = 'flex'
-  document.getElementById('calendarScreen').style.display = 'none'
-  document.getElementById('eventDetailsScreen').style.display = 'none'
-  document.getElementById('attendanceScreen').style.display = 'none'
-  document.getElementById('standingsScreen').style.display = 'none'
-  document.getElementById('chatScreen').style.display = 'none'
-  document.getElementById('dmsScreen').style.display = 'none'
-  document.getElementById('managementScreen').style.display = 'none'
-  document.getElementById('eventsManagementScreen').style.display = 'none'
-  document.getElementById('attendanceReportScreen').style.display = 'none'
+  showScreen('dashboardScreen')
 
   if (currentUser) {
     document.getElementById('userEmail').textContent = currentUser.email
@@ -200,15 +190,7 @@ async function showDashboard() {
 
 // Mostrar Calendário
 async function showCalendar(teamId) {
-  document.getElementById('loginScreen').style.display = 'none'
-  document.getElementById('dashboardScreen').style.display = 'none'
-  document.getElementById('calendarScreen').style.display = 'flex'
-  document.getElementById('eventDetailsScreen').style.display = 'none'
-  document.getElementById('attendanceScreen').style.display = 'none'
-  document.getElementById('standingsScreen').style.display = 'none'
-  document.getElementById('chatScreen').style.display = 'none'
-  document.getElementById('dmsScreen').style.display = 'none'
-
+  showScreen('calendarScreen')
   selectedTeam = teamId
   const team = userTeams.find(t => t.team_id === teamId)
   if (team) {
@@ -2022,18 +2004,18 @@ function renderChart() {
     // Renderizar barras
     let html = '<div class="chart-bars-wrapper">'
     sorted.forEach((athlete, index) => {
-      const fillClass = player.percentage >= 80 ? 'high' : player.percentage >= 60 ? 'medium' : 'low'
+      const fillClass = athlete.percentage >= 80 ? 'high' : athlete.percentage >= 60 ? 'medium' : 'low'
       const delay = index * 50 // Animação em cascata
 
       html += `
         <div class="chart-bar" style="animation-delay: ${delay}ms;">
           <div class="chart-bar-label">
-            <span class="player-name">${player.name}</span>
-            <span class="player-stats">${player.present}✅ ${player.absent}❌ ${player.justified}📝</span>
+            <span class="player-name">${athlete.name}</span>
+            <span class="player-stats">${athlete.present}✅ ${athlete.absent}❌ ${athlete.justified}📝</span>
           </div>
           <div class="chart-bar-container">
-            <div class="chart-bar-fill ${fillClass}" style="width: ${player.percentage}%; animation-delay: ${delay}ms;">
-              <span class="chart-bar-value">${player.percentage}%</span>
+            <div class="chart-bar-fill ${fillClass}" style="width: ${athlete.percentage}%; animation-delay: ${delay}ms;">
+              <span class="chart-bar-value">${athlete.percentage}%</span>
             </div>
           </div>
         </div>
