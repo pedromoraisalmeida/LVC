@@ -2083,15 +2083,15 @@ function renderTable() {
         <tbody>
     `
 
-    sorted.forEach(player => {
+    sorted.forEach(athlete => {
       html += `
         <tr>
-          <td data-label="Jogador">${player.name}</td>
-          <td data-label="Assiduidade"><span class="attendance-percentage">${player.percentage}%</span></td>
-          <td data-label="Presenças"><span class="attendance-status-badge present">✅ ${player.present}</span></td>
-          <td data-label="Faltas"><span class="attendance-status-badge absent">❌ ${player.absent}</span></td>
-          <td data-label="Justificadas"><span class="attendance-status-badge justified">📝 ${player.justified}</span></td>
-          <td data-label="Último Evento">${player.lastEvent}</td>
+          <td data-label="Jogador">${athlete.name}</td>
+          <td data-label="Assiduidade"><span class="attendance-percentage">${athlete.percentage}%</span></td>
+          <td data-label="Presenças"><span class="attendance-status-badge present">✅ ${athlete.present}</span></td>
+          <td data-label="Faltas"><span class="attendance-status-badge absent">❌ ${athlete.absent}</span></td>
+          <td data-label="Justificadas"><span class="attendance-status-badge justified">📝 ${athlete.justified}</span></td>
+          <td data-label="Último Evento">${athlete.lastEvent}</td>
         </tr>
       `
     })
