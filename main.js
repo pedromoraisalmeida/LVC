@@ -124,8 +124,18 @@ window.handleLogout = async function() {
   try {
     await supabaseClient.auth.signOut()
     currentUser = null
-    showLoginScreen()
+    userTeams = []
+    selectedTeam = null
+
+    // Unsubscribe from realtime
+    if (chatSubscription) {
+      chatSubscription.unsubscribe()
+      chatSubscription = null
+    }
+
+    showScreen('loginScreen')
   } catch (error) {
+    console.error('Erro ao sair:', error)
     alert(`❌ Erro ao sair: ${error.message}`)
   }
 }
@@ -1569,37 +1579,42 @@ let editingEventId = null
 
 // Função helper para mostrar uma screen
 function showScreen(screenId) {
-  // Esconder todas as screens
-  const allScreens = [
-    'loginScreen',
-    'dashboardScreen',
-    'calendarScreen',
-    'eventDetailsScreen',
-    'attendanceScreen',
-    'standingsScreen',
-    'chatScreen',
-    'dmsScreen',
-    'managementScreen',
-    'eventsManagementScreen'
-  ]
+  try {
+    // Esconder todas as screens
+    const allScreens = [
+      'loginScreen',
+      'dashboardScreen',
+      'calendarScreen',
+      'eventDetailsScreen',
+      'attendanceScreen',
+      'standingsScreen',
+      'chatScreen',
+      'dmsScreen',
+      'managementScreen',
+      'eventsManagementScreen',
+      'attendanceReportScreen'
+    ]
 
-  allScreens.forEach(id => {
-    const screen = document.getElementById(id)
+    allScreens.forEach(id => {
+      const screen = document.getElementById(id)
+      if (screen) {
+        screen.style.display = 'none'
+        screen.style.visibility = 'hidden'
+        screen.style.position = 'absolute'
+        screen.style.left = '-9999px'
+      }
+    })
+
+    // Mostrar screen pedida
+    const screen = document.getElementById(screenId)
     if (screen) {
-      screen.style.display = 'none'
-      screen.style.visibility = 'hidden'
-      screen.style.position = 'absolute'
-      screen.style.left = '-9999px'
+      screen.style.display = 'flex'
+      screen.style.visibility = 'visible'
+      screen.style.position = 'relative'
+      screen.style.left = 'auto'
     }
-  })
-
-  // Mostrar screen pedida
-  const screen = document.getElementById(screenId)
-  if (screen) {
-    screen.style.display = 'flex'
-    screen.style.visibility = 'visible'
-    screen.style.position = 'relative'
-    screen.style.left = 'auto'
+  } catch (error) {
+    console.error('Erro ao mudar screen:', error)
   }
 }
 
