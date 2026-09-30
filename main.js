@@ -254,27 +254,19 @@ function goToCalendar() {
 
 // Mostrar detalhes do evento
 async function showEventDetails(eventId) {
-  document.getElementById('loginScreen').style.display = 'none'
-  document.getElementById('dashboardScreen').style.display = 'none'
-  document.getElementById('calendarScreen').style.display = 'none'
-  document.getElementById('eventDetailsScreen').style.display = 'flex'
-
+  showScreen('eventDetailsScreen')
   await loadEventDetails(eventId)
 }
 
 // Mostrar Presenças
 async function showAttendance(eventId) {
-  document.getElementById('eventDetailsScreen').style.display = 'none'
-  document.getElementById('attendanceScreen').style.display = 'flex'
-
+  showScreen('attendanceScreen')
   await loadAttendance(eventId)
 }
 
 // Mostrar Classificações
 async function showStandings() {
-  document.getElementById('calendarScreen').style.display = 'none'
-  document.getElementById('standingsScreen').style.display = 'flex'
-
+  showScreen('standingsScreen')
   await loadStandings(selectedTeam)
 }
 
@@ -871,10 +863,7 @@ async function loadStandings(teamId) {
 
 // Mostrar Chat
 async function showChat() {
-  document.getElementById('dashboardScreen').style.display = 'none'
-  document.getElementById('calendarScreen').style.display = 'none'
-  document.getElementById('chatScreen').style.display = 'flex'
-
+  showScreen('chatScreen')
   const team = userTeams.find(t => t.team_id === selectedTeam)
   if (team) {
     document.getElementById('chatTeamName').textContent = `💬 ${team.team.name}`
@@ -998,12 +987,7 @@ async function sendMessage(event) {
 
 // Mostrar DMs
 async function showDMs() {
-  document.getElementById('loginScreen').style.display = 'none'
-  document.getElementById('dashboardScreen').style.display = 'none'
-  document.getElementById('calendarScreen').style.display = 'none'
-  document.getElementById('chatScreen').style.display = 'none'
-  document.getElementById('dmsScreen').style.display = 'flex'
-
+  showScreen('dmsScreen')
   await loadDMsList()
 }
 
@@ -1207,11 +1191,7 @@ function closeDmChat() {
 
 // Mostrar screen de gestão
 async function showManagement() {
-  document.getElementById('loginScreen').style.display = 'none'
-  document.getElementById('dashboardScreen').style.display = 'none'
-  document.getElementById('calendarScreen').style.display = 'none'
-  document.getElementById('managementScreen').style.display = 'flex'
-
+  showScreen('managementScreen')
   await loadUsersList()
 }
 
