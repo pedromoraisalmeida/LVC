@@ -632,18 +632,19 @@ async function loadAttendance(eventId) {
 
     if (eventError) throw eventError
 
-    // Get team members
-    const { data: membersData, error: membersError } = await supabaseClient
-      .from('user_teams')
-      .select('user_id, users(id, email, nome, numero, posicao)')
+    // Get athletes from the team
+    const { data: athletesData, error: athletesError } = await supabaseClient
+      .from('athletes')
+      .select('id, nome, numero, posicao')
       .eq('team_id', selectedTeam)
+      .order('numero')
 
-    if (membersError) throw membersError
+    if (athletesError) throw athletesError
 
     // Get attendances for this event
     const { data: attendanceData, error: attendanceError } = await supabaseClient
       .from('attendances')
-      .select('user_id, status, justification_id')
+      .select('athlete_id, status, justification_id')
       .eq('event_id', eventId)
 
     if (attendanceError) throw attendanceError
@@ -658,7 +659,7 @@ async function loadAttendance(eventId) {
     // Build attendance map
     const attendanceMap = {}
     attendanceData.forEach(a => {
-      attendanceMap[a.user_id] = { status: a.status, justification_id: a.justification_id }
+      attendanceMap[a.athlete_id] = { status: a.status, justification_id: a.justification_id }
     })
 
     // Render attendance list
@@ -668,8 +669,8 @@ async function loadAttendance(eventId) {
         ${new Date(eventData.data).toLocaleDateString('pt-PT')} ${eventData.oponente ? `vs ${eventData.oponente}` : ''}
       </p>
       <div class="attendance-list">
-        ${membersData.map(member => {
-          const attendance = attendanceMap[member.user_id] || { status: 'não_marcado', justification_id: null }
+        ${athletesData.map(athlete => {
+          const attendance = attendanceMap[athlete.id] || { status: 'não_marcado', justification_id: null }
           const justificationOptions = justificationsData.map(j =>
             `<option value="${j.id}" ${attendance.justification_id === j.id ? 'selected' : ''}>${j.tipo}</option>`
           ).join('')
@@ -677,25 +678,25 @@ async function loadAttendance(eventId) {
           return `
             <div class="attendance-item">
               <div class="attendance-player">
-                <div class="name">${member.users.nome || member.users.email}</div>
-                <div class="position">${member.users.posicao || 'N/A'} #${member.users.numero || '-'}</div>
+                <div class="name">${athlete.nome}</div>
+                <div class="position">${athlete.posicao || 'N/A'} #${athlete.numero || '-'}</div>
               </div>
               <div class="attendance-status">
                 <button class="status-btn ${attendance.status === 'confirmado' ? 'active present' : ''}"
-                  onclick="updateAttendance('${eventId}', '${member.user_id}', 'confirmado', null)">
+                  onclick="updateAttendance('${eventId}', '${athlete.id}', 'confirmado', null)">
                   ✅ Presente
                 </button>
                 <button class="status-btn ${attendance.status === 'ausente' ? 'active absent' : ''}"
-                  onclick="updateAttendance('${eventId}', '${member.user_id}', 'ausente', null)">
+                  onclick="updateAttendance('${eventId}', '${athlete.id}', 'ausente', null)">
                   ❌ Falta
                 </button>
                 <button class="status-btn ${attendance.status === 'justificado' ? 'active justified' : ''}"
-                  onclick="updateAttendance('${eventId}', '${member.user_id}', 'justificado', null)">
+                  onclick="updateAttendance('${eventId}', '${athlete.id}', 'justificado', null)">
                   📝 Justif.
                 </button>
               </div>
               ${attendance.status === 'justificado' ? `
-                <select onchange="updateAttendance('${eventId}', '${member.user_id}', 'justificado', this.value)"
+                <select onchange="updateAttendance('${eventId}', '${athlete.id}', 'justificado', this.value)"
                   style="margin-top: 10px; padding: 6px; border-radius: 4px; border: 1px solid var(--border-color);">
                   <option value="">Escolher motivo...</option>
                   ${justificationOptions}
@@ -715,15 +716,15 @@ async function loadAttendance(eventId) {
   }
 }
 
-// Atualizar presença de um utilizador
-async function updateAttendance(eventId, userId, status, justificationId) {
+// Atualizar presença de um atleta
+async function updateAttendance(eventId, athleteId, status, justificationId) {
   try {
     // Check if attendance record exists
     const { data: existingData, error: checkError } = await supabaseClient
       .from('attendances')
       .select('id, status')
       .eq('event_id', eventId)
-      .eq('user_id', userId)
+      .eq('athlete_id', athleteId)
 
     if (checkError) throw checkError
 
@@ -736,7 +737,7 @@ async function updateAttendance(eventId, userId, status, justificationId) {
           .from('attendances')
           .delete()
           .eq('event_id', eventId)
-          .eq('user_id', userId)
+          .eq('athlete_id', athleteId)
 
         if (deleteError) throw deleteError
       } else {
@@ -750,7 +751,7 @@ async function updateAttendance(eventId, userId, status, justificationId) {
           .from('attendances')
           .update(updateData)
           .eq('event_id', eventId)
-          .eq('user_id', userId)
+          .eq('athlete_id', athleteId)
 
         if (updateError) throw updateError
       }
@@ -758,7 +759,7 @@ async function updateAttendance(eventId, userId, status, justificationId) {
       // Se não existe, cria novo (INSERT)
       const insertData = {
         event_id: eventId,
-        user_id: userId,
+        athlete_id: athleteId,
         status,
         marcado_em: new Date(),
         confirmado_em: new Date()
