@@ -1892,11 +1892,11 @@ async function loadAttendanceReport() {
       .from('attendances')
       .select(`
         id,
-        user_id,
+        athlete_id,
         event_id,
         status,
         justification_id,
-        users:user_id (id, nome),
+        athletes:athlete_id (id, nome, numero, posicao),
         events:event_id (id, data, tipo, team_id),
         justifications:justification_id (id, tipo, descricao)
       `)
@@ -1963,7 +1963,7 @@ function calculateStats() {
     const total = reportData.attendances.length
     const average = total > 0 ? Math.round((present / total) * 100) : 0
 
-    console.log(`Stats: ${present}/${total} presentes, ${absent} faltas, ${justified} justificadas`)
+    console.log(`Stats: ${present}/${total} atletas presentes, ${absent} faltas, ${justified} justificadas`)
 
     document.getElementById('kpiAverage').textContent = average
     document.getElementById('kpiPresent').textContent = present
@@ -1987,17 +1987,17 @@ function renderChart() {
     const playerStats = {}
 
     reportData.attendances.forEach(att => {
-      const playerName = att.users?.nome || 'Desconhecido'
+      const athleteName = att.athletes?.nome || 'Desconhecido'
 
-      if (!playerStats[playerName]) {
-        playerStats[playerName] = { present: 0, absent: 0, justified: 0, total: 0 }
+      if (!playerStats[athleteName]) {
+        playerStats[athleteName] = { present: 0, absent: 0, justified: 0, total: 0 }
       }
 
-      if (att.status === 'confirmado') playerStats[playerName].present++
-      else if (att.status === 'falta') playerStats[playerName].absent++
-      else if (att.status === 'justificado') playerStats[playerName].justified++
+      if (att.status === 'confirmado') playerStats[athleteName].present++
+      else if (att.status === 'falta') playerStats[athleteName].absent++
+      else if (att.status === 'justificado') playerStats[athleteName].justified++
 
-      playerStats[playerName].total++
+      playerStats[athleteName].total++
     })
 
     // Ordenar por percentagem (decrescente)
@@ -2009,11 +2009,11 @@ function renderChart() {
       }))
       .sort((a, b) => b.percentage - a.percentage)
 
-    console.log('Players chart data:', sorted)
+    console.log('Athletes chart data:', sorted)
 
     // Renderizar barras
     let html = '<div class="chart-bars-wrapper">'
-    sorted.forEach((player, index) => {
+    sorted.forEach((athlete, index) => {
       const fillClass = player.percentage >= 80 ? 'high' : player.percentage >= 60 ? 'medium' : 'low'
       const delay = index * 50 // Animação em cascata
 
@@ -2048,23 +2048,23 @@ function renderTable() {
       return
     }
 
-    // Agrupar por jogador
+    // Agrupar por atleta
     const playerStats = {}
 
     reportData.attendances.forEach(att => {
-      const playerName = att.users?.nome || 'Desconhecido'
+      const athleteName = att.athletes?.nome || 'Desconhecido'
 
-      if (!playerStats[playerName]) {
-        playerStats[playerName] = { present: 0, absent: 0, justified: 0, total: 0, lastEvent: null }
+      if (!playerStats[athleteName]) {
+        playerStats[athleteName] = { present: 0, absent: 0, justified: 0, total: 0, lastEvent: null }
       }
 
-      if (att.status === 'confirmado') playerStats[playerName].present++
-      else if (att.status === 'falta') playerStats[playerName].absent++
-      else if (att.status === 'justificado') playerStats[playerName].justified++
+      if (att.status === 'confirmado') playerStats[athleteName].present++
+      else if (att.status === 'falta') playerStats[athleteName].absent++
+      else if (att.status === 'justificado') playerStats[athleteName].justified++
 
-      playerStats[playerName].total++
-      if (!playerStats[playerName].lastEvent) {
-        playerStats[playerName].lastEvent = att.events?.tipo || 'N/A'
+      playerStats[athleteName].total++
+      if (!playerStats[athleteName].lastEvent) {
+        playerStats[athleteName].lastEvent = att.events?.tipo || 'N/A'
       }
     })
 
